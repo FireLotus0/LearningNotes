@@ -428,4 +428,617 @@ auto foldSum(T...s) {
 如果函数参数包为空，则此时&&的结果为true，||的结果为false，逗号运算符的结果为void()。  
 ![alt text](./images/fold_expression.jpg)  
 
-  
+* 使用折叠表达式->*遍历二叉树，有点抽象，但是对于理解学习这种技术还可以，怪花里胡哨的：
+```cpp
+struct Node{
+int value;
+Node* left;
+Node* right;
+Node(int v):value(v), left(nullptr), right(nullptr){}
+};
+
+auto left = &Node::left;
+auto right = &Node::right;
+
+//使用折叠表达式遍历
+template<typename T, typename...TP>
+Node* traverse(T np, TP...paths)
+{
+    retrun (np ->* ... ->* paths); //np ->* path1 ->* path2
+}
+
+int main()
+{
+    Node* root = new Node{0};
+    root->left = new Node{1};
+    root->left->right = new Node{2};
+
+    Node* node = traverse(root, left, right);
+}
+
+//使用折叠表达式打印参数包，这样打印没有空格分隔
+template<typename...Types>
+void print(Types...args)
+{
+    (std::cout << ... << args) << std::endl;
+}
+
+//思考：展开形式，参数使用方式？
+template<typename T>
+class AddSpace
+{
+private:
+    const T& data;
+
+public:
+    AddSpace(const T& ref):data(ref) {}
+
+    friend std::ostream& operator<<(std::ostream& os, AddSpace<T> s) ]
+    {
+        return os << s.data << " ";
+    }
+};
+
+template<typename...Types>
+void print(Types...args)
+{
+    (std::cout << ... << AddSpace(args)) << std::endl;
+}
+```
+
+* 变参模版的应用：  
+    * 将参数传递给堆上构造的对象的构造函数，如make_shared<T>(args1, args2)
+    * 构造线程对象时，传递的参数： std::thread t(func, args1, args2)
+    * ......
+    变参模版经常结合移动语义，完美转发一起使用
+```cpp
+template<typename T, typename...Args>
+shared_ptr<T> make_shared(Args&&...args);
+
+class thread{
+public:
+    template<typename F, typename...Args>
+    explicit thread(F&& func, Args&&...args);
+};
+//值传递：decay  引用传递：不传递
+template<typename...Args>
+void f(Args...args);
+
+template<typename...Args>
+void f(const Args&...args);
+
+* 变参模版和变参表达式：  
+参数包可以出现在类模板中，函数模版中，表达式中，using声明中，推导指南中。在表达式中，可以对参数包进行计算  
+```cpp
+template<typename...Types>
+void func(const Types&...args)
+{
+    print(args + args...); // args1 + args1, args2 + args2...
+}
+
+//加上一个常数
+template<typename...Args>
+void func(const Args&...args)
+{
+    print(args + 1 ...);    //1 ...之间有个空格
+}
+
+//编译期表达式中可以计算模版参数包
+template<typename T1, typename...TN>
+constexpr bool isAllSame(T1, TN...)
+{
+    return (std::is_same<T1, TN>::value && ...);
+}
+
+//变参索引
+template<typename C, typename...Idx>
+void func(typename C, typename...Idx)
+{
+    print(C[Idx]...);
+}
+
+//非类型模版参数也可以是参数包
+template<std::size_t...Idx, typename C>
+void f(Idx...idx, C c)
+{
+    print(C[idx]...);
+}
+
+//变参模版推导指南
+template<typename T, typename...U>
+array(T, U...) -> array<std::enable_if_t<(is_same_v<T, U> && ...), T>, (1 + sizeof...(U))>;
+
+//变参基类和using声明
+class Customer
+{
+private:
+    std::string name;
+public:
+    Customer(const std::string& nm): name(nm) {}
+    std::string getName() const { return name; }
+};
+
+struct CustomerEq{
+    bool operator()(const Customer& c1, const Customer& c2) const {
+        return c1.getName() == c2.getName();
+    }
+};
+
+struct CustomerHash{
+    std::size_t operator()(const Customer& c) const {
+        return std::hash<std::string>()(c.getName());
+    }
+};
+// 从C++17开始
+template<typename...Base>
+struct Overloader : Base...
+{
+    using Base::operator()...;
+};
+
+int main()
+{
+    using CustomerOp = Overloader<CustomerHash, CustomerEq>;
+
+    std::unorder_set<Customer, CustomerHash, CustomerEq> coll1;
+}
+
+```
+
+* 如果一个名字依赖于模版参数并且是一个类型，则在使用时需要用typename进行标识。T::const_iterator pos  ---> typename T::const_iterator pos。
+
+* 零初始化：对于许多内置类型，包括指针，没有默认的构造函数。任何未初始化的局部变量都是未定义的。
+```cpp
+template<typename T>
+void f() {
+    T x;    //x是未定义的
+    T y{};  //y如果是内置类型，则此时为0，false，nullptr
+    T z();  //c++11之前
+}
+```
+在c++17之前，0初始化的方式为T x = T();但是，前提为拷贝构造函数不是explicit， 从17开始两种方式都可以。T{}， T()。从11开始，可以在类中为非静态成员提供默认值。
+
+* 模版中的this->：
+```cpp
+template<typename T>
+class Base{
+public:
+    void test() {}
+};
+
+template<typename T>
+class Derived : Base<T>
+{
+public:
+    void foo() 
+    {
+        test(); //错误：只能调用到外部的test
+        this->test()； //正确
+    }
+};
+```
+
+* 向模版参数传递原始数组和字符串字面值存在的问题：如果是值传递，则"hello"-->T = const char* ，如果是引用传递，则T = const char[6]。可以特化模版特殊处理原始数组和字符串字面值，可以使用推导指南。
+```cpp
+template<typename T, int N, int M>
+bool less(T (&a)[N], T (&b)[M]) {
+    for(int i  = 0; i < N && i < M; ++i) {
+        return a[i] < b[i];
+    }
+    return N < M;
+}
+
+int x[] = {1, 2, 3};
+int y[] = {2, 3, 5};
+std::cout << less(x, y) << std::endl;
+```
+有时候不得不重载或者部分特化来处理未知绑定的数组，这句话啥意思？？？：
+```cpp
+template<typename T>
+struct MyClass;
+
+template<typename T,  std::size_t SZ>
+struct MyClass<T[SZ]>   //部分特化，已知绑定的数组
+{
+    static void print()  {}
+};
+
+template<typename T, std::size_t SZ>
+struct MyClass<T(&)[SZ]>  //部分特化，已知绑定数组的引用
+{
+    static void print() {}
+};
+
+template<typename T>
+struct MyClass<T[]>     //部分特化，未知绑定的数组
+{
+    static void print() {}
+};
+
+template<typename T>
+struct MyClass<T(&)[]> //部分特化，未知绑定数组的引用
+{
+    static void print() {}
+};
+
+template<typename T>
+class MyClass<T*> //部分特化，指针类型
+{
+
+};
+```
+
+* 通用lambda表达式：14引入。成员模版的裁剪版，因为lambda本质上是一个匿名类。
+```cpp
+[] (auto x, auto y)
+{
+    return x + y;
+}
+//等价于
+class SomeClass{
+public:
+    SomeClass(); //只能由编译器调用
+    template<typename T1, typename T2>
+    auto operator() (T1,x, T2 y) {
+        return x + y;
+    }
+};
+```
+
+* 变量模版：14引入。变量可以被参数化为特殊的类型，叫做变量模版。
+```cpp
+template<typename T>
+constexpr T pi{3.1415926535892385}; //定义变量的值，但是没有定义类型
+std::cout << pi<float> << std::endl;
+std::cout << pi<double> << std::endl;
+
+//header.h
+template<typename T = unsigned int> T val{};
+
+//translate unit 1
+#include "header.h"
+int main() 
+{
+    val<int> = 40;
+
+}
+
+//translate unit 2
+void print()
+{
+    std::cout << val<int> << std::endl;
+}
+
+//变量模版可以具有默认参数和默认值
+template<typename T = long>
+constexpr T val = T{3.1415926};
+//使用默认值
+std::cout << val<> << std::endl;
+
+//变量模版可以具有非类型参数
+ template<int N>
+ std::array<int, N> arr{};
+
+ template<auto N>
+ constexpr decltype(N) dval = N;    //类型依赖于传递的值
+
+ int main() 
+ {
+    arr<10>[0] = 42;
+ }
+```
+
+* 变量模版作为类模板的数据成员
+```cpp
+template<typename T>
+class Test
+{
+public:
+    static constexpr int max = 1000;
+};
+//则对于不同的特化Test，可以定义不同的值
+template<typename T>
+constexpr int myMax = Test<T>::max;
+
+auto i = myMax<std::string>; //等价于Test<std::string>::max;
+
+//标准库中得示例
+namespace std
+{
+    template<typename T>
+    class numeric_limits{
+    public:
+        static const bool is_signed = false;
+    };
+}
+//可以定义
+template<typename T>
+constexpr bool isSigned = std::numeric_limits<T>::is_signed;
+
+//使用
+auto i = isSigned<char>;
+```
+
+* 模版的模版参数：
+```cpp
+template<typename T, tempalte<typename Elem> class Cont = std::vector>
+class MyStack{
+    Cont<T> cont;
+public:
+    void test();
+};
+
+template<typename T, template<typename> class Cont>
+void MyStack<T, Cont>::test() {
+
+}
+/*在c++17之前，模板的模版参数如果是一个标准库容器，上面这段代码存在一点问题，；例如：容器：template<typename T, template<typename Elem> class allocator = default_allocator<Elem>>，虽然有默认参数，但是会将其忽略，也就是我们传递的容器需要两个模版参数，但是上面Stack中只传递了一个模版参数，导致不匹配：
+*/
+template<typename T, template<typename Elem, typename Alloc = std::allocator<Elem>> class  Cont = std::vector>
+class Test{
+public:
+    void test();
+};
+
+template<typename T, template<typename, typename> class Cont>
+void Test<T, Cont>::test() {}
+```
+
+* 访问模版参数的中的类型：typename T::size
+* 如果基类是一个类模板，派生类中访问基类中的成员函数需要使用this->
+* 模版形式的构造函数和赋值操作符不会取代之前定义普通函数。
+* _t后缀从c++14开始，_v后缀从c++17开始
+* 注意：***移动语义需要和move结合使用，即使函数签名使用T&&，但是传递一个左值引用而不是move()，则会调用左值引用的版本***。T&&是转发引用，而T::Iterator&&是右值引用。
+```cpp
+class Peraon
+{
+private:
+    std::string name;
+public:
+    template<typename STR>
+    Person(STR&& str) : name(std::move(str)) {}
+    Person(const std::string& nm) : name(nm) {}
+    Person(std::string&& nm): name(std::move(nm)) {}
+};
+
+int main()
+{
+    Person p1("tmp");   //OK
+    Person p2(P1);  // Error
+
+    const Person p3("P3");
+    Person p4(p3);  //OK
+} 
+/*上面这段代码的问题是：重载决议认为对于一个nonconst引用，Person(T&&)比Person(const Person&)更加匹配。那么是否可以声明一个Person(Person&)来处理这种情况呢？ --不能。因为在该类的派生类中，重载决议依然认为模版形式的更加匹配。要解决这个问题，也就是控制模版的匹配，使用std::enable_if*/
+
+//问题：传入的参数是一个std::string或可以构造std::string时，调用拷贝构造，不应该调用T&&
+template<typenmae T>
+using EnableIfString = std::enable_if_t<std::is_convertiable_v<T, std::string>>;
+
+class Person
+{
+public:
+    template<typename T, typename EnableIfString<T>>
+    Person(T&&);
+};
+
+```
+* std::enable_if：编译期间，根据条件忽略某些模版的匹配。
+```cpp
+template<typename T>
+typename std::enable_if<sizeof(T) > 4>::type test() {}
+/*enable_if<condition, Type>：如果condition==true,则type为Type，若Type可以为空或void，若condition==false，则忽略该模版的匹配
+*/
+
+/*enable_if的常用写法，将enable_if放在模版声明template的中间可读性不好，所以通常引入一个额外的模版参数，然会将enable_if放在后面。*/
+template<typename T, typename = std::enable_if_t<condition, Type>>
+
+/*还可以使用模版别名简化enable_if表达式*/
+template<typename T>
+using CheckCondition = std::enable_if_t<sizeof(T) > 4>
+template<tyname T, typename CheckCondition<T>>
+void test() {}
+```
+
+* ***不能使用enable_if来禁用之前定义的拷贝构造，移动构造，拷贝赋值运算符，移动赋值运算符这4个特殊的成员函数。因为，模版函数并不会被视为特殊的成员函数，也就是当需要这4个函数时，不会考虑模版函数。使用=delete也无济于事。有一个技巧来解决这个问题(重载决议)：将拷贝构造函数用cv限定，用=delete标记防止隐式生成，再写自己的拷贝构造成员模版***
+```cpp
+class Test
+{
+public:
+    Test(const volatile&) = delete;
+
+    template<typename T>
+    Test(const Test&) {}
+};
+```
+
+* 从17开始，一个对象即使没有拷贝构造，也没有移动构造，可以传递temporary entities(rvalue)
+
+* ***值传递的退化操作：原始数组和字符串字面值退化为指针，CV限定符被忽略，函数退化为函数指针***
+
+* std::string中减少拷贝代价的方式：SSO：小对像优化，传入的值比较小时，直接在string对象中保存，不必分配堆空间；写拷贝：这种方式在多线程中问题比较大，从11版本开始移除。
+
+* 在模版中参数传递使用T&可能存在的问题：T可能被推导为带有const限定符，从而本来期待一个左值，但是传递右值也可以，避免这种情况的方式：
+    * 使用静态断言进行检查：
+    ```cpp
+    template<typename T>
+    void test(T& t) {
+        static_assert(!std::is_const_v<T>, "T is const");
+    }
+    ```
+    * 使用enable_if：
+    ```cpp
+    template<typename T, typename = std::enable_if_t<!std:;is_const_v<T>>>
+    void  test() {}
+    ```
+* std::ref和std::cref：从11开始，对于函数模版，传递参数时可以使用ref和cref。cref不会改变模版中对参数的处理，它对传递进来的参数进行包装，使其表现起来就像引用一样，实际，创建了一个std::reference_wrapper<>对象指向原始的参数，然后将这个对象作为值进行传递，这个对象可以进行隐式类型转换为原始的对象。
+```cpp
+template<typoename T>
+void test(T arg) {
+    std::cout << arg << std::endl; 
+}
+
+std::string s = "hello";
+test(std::cref(s));     /*ERROR：arg已经变成了std::reference_wrapper对象*/
+```
+***std::reference_wrapper<>的作用是将引用包装成一种对象，从而可以在拷贝它，例如：在类中用std::reference_wrapper<>包装容器中对象的引用。***
+
+* 原始数组和字符串字面值：
+```cpp
+template<typename T>
+void test(T arg1, T arg2)
+{
+    
+}
+
+test("hello", "her");   //Error
+```
+解决方法：  
+* 保证传入的是数组，手动decay
+```cpp
+template<typename T, std::size_t L1, std::size_t L2>
+void test(T(&arg1)[L1], T(&arg2)[L2])
+{
+    auto a = arg1;
+    auto b = arg2;  //退化为指针类型，a， b
+}
+```
+* 使用enable_if检测是否是原始数组，若是，使用万能引用传递  
+```cpp
+template<typename T, typename = std::enable_if_t<std::is_array_v<T>>>
+void test(T&& arg1, T&&arg2)
+{}
+```
+
+* 处理模版函数中的返回值：不论是传值，还是传引用，如果返回类型为T，则存在隐患，T可能为引用类型：
+```cpp
+template<typename T>
+typename std::remove_reference<T>::type test() {
+    return T{};
+}
+
+//使用14语法auto，自动decay 
+template<typename T>
+auto test()
+{
+    return T{};
+}
+```
+
+* ***从std::make_pair的变更历史察看参数传递可能存在的问题：***
+```cpp
+/*最初版本98,使用const &避免大对象的拷贝，但是处理原始数组和字符串字面值容易出错*/
+template<typename T1, typename T2>
+pair<T1, T2> make_pair<const T1& t1, const T2& t2>
+{
+    return <T1, T2>(t1, t2);
+}
+
+/*03*/
+template<typename T1, typename T2>
+pair<T1, T2> make_pair<T1 t1, T2 t2>
+{
+    return pair<T1, T2>(t1, t2);
+}
+
+/*11版本支持移动语义*/
+template<typename T1, typename T2>
+constexpr pair<typename std::decay<T1>::type, typename std::decay<T2>::type> make_pair(T1&& t1, T2&& t2) 
+{
+    return pair<typename std::decay<T1>::type, typename std::decay<T2>::type>(std::foward<T1>(t1), std:;foward<T2>(t2));
+}
+```
+
+* 模版元编程在编译期计算是否为素数：
+```cpp
+template<unsigned p, unsigned d>
+struct DoIsPrime {
+    static constexpr bool value = (p%d!=0) && DoIsPrime<p, d-1>::value;
+};
+
+template<unsigned p>
+struct DoIsPrime<p, 2>{
+    static constexpr bool value = (p%2)!=0;
+};
+
+template<unsigned p>    //primary template
+struct IsPrime{
+    static constexpr bool value = DoIsPrime<p, p/2>::value;
+};
+
+//特化处理特殊情况
+template<>
+struct IsPrime<0> { static constexpr bool value = false; };
+template<>
+struct IsPrime<1> { static constexpr bool value = false; };
+template<>
+struct IsPrime<2> { static constexpr bool value = true; };
+template<>
+struct IsPrime<3> { static constexpr bool value = true; };
+```
+
+* constexpr：11引入。一个constexpr函数可以在编译期计算，但是c++11对于conxtexpr有严格的限制，在14中减少了许多限制。
+```cpp
+//11版本
+constexpr bool doIsPrime(unsigned p, unsigned d)
+{
+    return d!=2 ? (p%d!=0) && doIsPrime(p, d-1) : (p%2!=0);
+}
+
+constexpr bool isPrime(unsigned p)
+{
+    return p < 4 ? !(p < 2) : doIsPrime(p, p/2);
+}
+
+//14版本
+constexpr bool isPrime(unsigned int p)
+{
+    for(unsigned int d = 2; d <= p/2; d++ ) {
+        if(p % d == 0) {
+            return false;
+        }
+    }
+    return p > 1;
+}
+```
+
+* 对于编译器来说需要进行编译期计算的上下文：数组的长度，非类型模版参数等，此时会调用constexpr函数进行计算，如果发生错误则导致编译错误；其他上下文中，编译器可能会，可能不会执行计算，但若是执行并且出错，则不会导致编译错误，而是将其放到运行期间运行。比如：
+```cpp
+constexpr bool isPrime9 = isPrime(9);   
+const bool isPrime10 =isPrime(10);  //编译期计算
+
+int x;
+constexpr bool isPrimeX = isPrime(x);   //运行时计算
+
+
+* ***通过局部特化选择执行路径***：
+```cpp
+/*根据模版参数是否是素数选择执行路径*/
+template<int SZ, bool = isPrime<SZ>>
+struct Helper;
+
+template<int SZ, true>
+struct Helper
+{
+    //操作
+};
+
+template<int SZ, false>
+struct Helper
+{
+    //操作
+};
+
+template<typename T, std::size_t SZ>
+long test(const std::array<T, SZ>& arr) 
+{
+    Helper<SZ> h;   //依赖于SZ是否是素数
+    //操作
+}
+```
+
+* 因为***函数模版不支持局部特化***， 必须使用其他机制来根据条件改变函数的行为，例如：  
+    * 将特化交给class，在class中写static成员函数
+    * 使用enable_if
+    * 使用17支持的编译期if
+
