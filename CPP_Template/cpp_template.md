@@ -1042,3 +1042,26 @@ long test(const std::array<T, SZ>& arr)
     * 使用enable_if
     * 使用17支持的编译期if
 
+* 成员模版需要注意的一个地方：  
+```cpp
+class Test
+{
+public:
+    template<typename T, typename...Args, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, Test>>>
+    Test(T&& t, Args&&...args) {}
+};
+```
+
+* 返回值推荐写法：  
+```cpp
+template<typename T>
+auto test(const T& t) -> decltype({t.size(), T::size()}) {
+    return t.size();
+}
+```
+
+* C++支持的模版类型：函数模版，类模板，变量模版，别名模版。  
+
+* 可调用对象（也叫作函数对象）：函数指针，仿函数，重载了转换运算符成函数指针或者函数的类   
+
+* tuple: 可以容纳任意数量任意类型的元素，这是其他容器不能做到的。同时，tuple具有很多编译期间计算的特性，可以衔接编译期和运行期，潜力巨大。
