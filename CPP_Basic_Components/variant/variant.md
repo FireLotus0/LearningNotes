@@ -52,7 +52,7 @@ struct IndexOf<T, T, Rest...>
 };
 
 template<typename T>
-struct IIndexOf<T>
+struct IndexOf<T>
 {
     enum { value = -1 };
 };
