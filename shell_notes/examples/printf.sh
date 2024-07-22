@@ -1,0 +1,6 @@
+#!/bin/bash
+
+printf "%-5s %-10s %-4s\n" No Name Mark
+printf "%-5s %-10s %-4.2f\n" 1 Alen 77.9876
+printf "%-5s %-10s %-4.2f\n" 2 Blob 67.4476
+printf "%-5s %-10s %-4.2f\n" 3 Jack  87.9876
