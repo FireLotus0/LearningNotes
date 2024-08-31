@@ -56,7 +56,7 @@ template<typename T>
 class Singleton_3
 {
 public:
-	// 双指针检查锁，可能会导致线程的序列化问题
+	//  不能使用，存在潜在的条件竞争问题
 	template<typename...Args>
 	static T* instance(Args&&...args) {
 		if(ptr == nullptr) {
