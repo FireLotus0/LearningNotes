@@ -12,7 +12,8 @@ set(SRC
 #	struct_member_pointer.cc
 #	test.cc
 #	use_bit_field.cc
-	use_bitset_reference.cc
+#	use_bitset_reference.cc
+	nontype_template.cc
 )
 
 add_executable(${PROJECT_NAME} ${SRC})
