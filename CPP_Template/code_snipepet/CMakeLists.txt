@@ -13,7 +13,9 @@ set(SRC
 #	test.cc
 #	use_bit_field.cc
 #	use_bitset_reference.cc
-	nontype_template.cc
+#	nontype_template.cc
+	template_reference.cc
+
 )
 
 add_executable(${PROJECT_NAME} ${SRC})

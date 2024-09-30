@@ -1064,4 +1064,289 @@ auto test(const T& t) -> decltype({t.size(), T::size()}) {
 
 * 可调用对象（也叫作函数对象）：函数指针，仿函数，重载了转换运算符成函数指针或者函数的类   
 
-* tuple: 可以容纳任意数量任意类型的元素，这是其他容器不能做到的。同时，tuple具有很多编译期间计算的特性，可以衔接编译期和运行期，潜力巨大。
+* tuple: 可以容纳任意数量任意类型的元素，这是其他容器不能做到的。同时，tuple具有很多编译期间计算的特性，可以衔接编译期和运行期，潜力巨大。  
+
+* sizeof...()可以用于模板参数包，也可以用于函数参数包
+
+* 模板参数中的auto：可以用于声明一个更加通用泛华的接受任意非类型模板参数的模板声明
+
+* 考虑***template<typename> friend class Stack;***的作用，结合operator = 的可以实现什么样的效果
+
+* 对于一个全特化的函数模板(包括是成员函数模板)，在头文件中进行定义，则和普通函数在头文件中进行定义是一样的，在不加inline的情况下，如果头文件包含多次会导致重定义错误
+
+* 首先明确特殊的成员函数指的是对对象进行拷贝或者移动的成员函数，例如拷贝/移动构造函数，拷贝/移动赋值运算符；其次，声明为模板的成员函数不会被视为这类特殊的成员函数，也就是说模板构造函数并不会取代之前定义的构造函数或者赋值运算符
+	- 导致的结果是预定义的拷贝/移动构造函数,预定义的拷贝/移动赋值运算符的不能说通过定义一个成员模板，来将其禁用，本质还是成员模板不算做特殊的成员函数。从而在没有显式声明这些特殊的成员函数时，编译器还是会隐式生成它们
+	- 如果要使这个成员模板代替特殊的成员函数，则需要将这些特殊的成员函数标记为deleted，MyClass(const volatile  MyClass&) = deleted;	volatile用于更好的进行匹配
+
+* 显式的调用模板成员函数，需要使用template关键字，声明<是模板参数列表的起始, 什么情况下需要用到这种方式(该类依赖于模板参数，同时又调用该类的模板成员函数):
+```cpp
+// 不论是.template还是->template，或者是::template，这种语法只会出现在一个模板里面同时又有模板参数的依赖，普通函数里面不需要这样做
+template<unsigned long N>
+void printBitSet(const std::bitset<N>& bs) {
+	std::cout << bs.template to_string<char, std::char_traits<char>, std::allocator<char>>();
+}
+```
+
+* c++14引入了通用的lambda表达式：
+```cpp
+auto func = [](auto x, auto y) {
+	return x + y;
+}
+// 等价于一个具有默认构造函数的类
+class SomeCompilerSpecificName
+{
+public:
+	SomeCompilerSpecificName();
+
+	template<typename T1, typename T2>
+	auto operator()(T1 x, T2 y) {
+		return x + y;
+	};
+};
+
+
+####  从c++14开始，变量也可以通过一个类型进行参数化，称之为变量模板，变量模板的声明应当具有全局作用域或在命名空间中，就像函数声明的限制一样
+```cpp
+template<typename T = double>		// 可以具有默认模板参数
+constexpr T PI = {3.1415926};		// PI可以具有默认值,3.1415926，但是其类型尚未确定
+```
+- 变量模板可以接受非类型模板参数
+```cpp
+template<int N>
+constexpr std::array<int, N> data{};	// 参数化初始化器
+
+template<auto T>
+constexpr decltype(T) d = T;
+
+```
+
+- 变量模板的应用场景 ：c++17中前缀_v就是用的变量模板实现
+```cpp
+template<typename T>
+class MyClass 
+{
+public:
+	
+	static constexpr int m_val = 1000;
+};
+
+template<typename T>
+auto val = MyClass<T>::m_val;
+
+// 而后可以使用vla<T>，而不是MyClass<T>::m_val
+auto data = val<int>;
+auto data_2 = val<std::string>;
+
+```
+
+
+* 模板的模板参数使用场景：
+```cpp
+template<typename T, typename Containter = std::vector<T>>
+class Stack_1;
+
+template<typename T, template <typename Elem> class  Cont = std::vecor> // 直到c++17，class可以替换成为typename
+class Stack_2;
+
+// Stack_1使用时，需要传递容器的模板参数类型：Stack_1 s<int, std::vector<int>>
+// Stack_2使用时，传递容器的类型即可，不需要再次指定容器参数类型：Stack_2 s<int, std::vector> 
+
+```
+
+* 在转发引用中，模板参数T必须是真正的名称，仅仅依赖于模板参数的情况下（T::iterator&&），依然只是右值引用
+
+#### 在构造函数中使用转发引用存在的问题：根据重载决议，当传入一个MyClass&进行构造的时候，MyClass(T&&)优先于MyClass(const MyClass&)(假设声明了拷贝构造函数),解决这个问题，首先想到的是声明一个左值引用的构造函数MyClass(MyClass&)，但是这只能部分解决，如果存在派生类，则成员模板依然是优先选择，我们需要实现的效果是在传入一个MyClass或者可以转换成MyClass的对象时，禁用成员模板，所以根本的解决方法是使用std::enable_if。
+- 关于std::enable_if的使用细节：
+	- 在声明中使用enable_if是一种笨拙的方式，应当在模板参数声明中添加一个模板参数且默认值为std::enable_if_t，例如;
+	```cpp
+	template<typename T, typename = std::enable_if_t<(sizeof(T) > 4)>>
+	```
+- 在上面的例子中，假设MyClass可以通过一个string进行构造，
+```cpp
+// 在这里为什么不这样写typename = std::enable_if_t<!std::is_convertible_v<T, MyClass>> ， 这是一个逻辑错误？
+template<typename T, typename = std::enable_if_t<std::is_convertible_v<T, std::string>>>
+MyClass(T&& t);
+```
+
+* constexpr主要用于简化编译期间各种操作
+	- 通常，如果输入正确，一个constexpr函数可以在编译期间进行计算
+	- c++11中用constexpr修饰的函数具有严格的限制，例如每个constexpr函数必须具有一个返回语句。在c++14中移除了大部分的限制
+	- constexpr可以在编译期实现大多数的控制结构，例如循环，避免使用模板递归实例化的方式实现循环
+	```cpp
+		constexpr bool isPrime(unsigned int p) {
+			for(unsigned int d = 2; d <= p / 2; d++) {
+				if(p % d == 0) {
+					return false;
+				}
+			}
+
+			return p > 1;
+		}
+	```
+
+#### 偏特化的应用：偏特化的一个应用场景是执行流的选择
+```cpp
+template<typename T, bool>
+struct Test{};
+
+template<typename T, false>
+struct Test{};
+
+template<typename T, true>
+struct Test{};
+
+```
+
+* 模板函数不支持偏特化，要实现在特定条件下改变函数的实现需要采取其他机制进行：
+	- 使用类和静态函数
+	- 使用std::enable_if
+	- 使用SFINE机制
+	- 使用if constexpr
+
+#### ODR
+	- 普通的(即不是模板)非内联函数和成员函数，以及(非内联)全局变量和静态数据成员应该在整个程序中只定义一次
+	- 类类型(包括结构体和联合)、模板(包括部分专门化，但不包括完全专门化)、内联函数和变量应该在每个翻译单元中最多定义一次，并且所有这些定义应该是相同的
+
+* 将函数名作为参数传递给函数，会执行一个decay操作，效果等同于传递函数地址,&func。在主流的c++代码中传递函数的引用是很少见的
+```cpp
+template<typename Func, typename...Args> 
+void swapper(const Func& func, Args&&...args) {};	// 很少见
+```
+
+* 在重载函数调用运算符的时候，最好将其声明为const。假如要将这个操作传递给库或者框架使用，且它们需要函数被const修饰，则这里会产生微妙的错误，不易发觉和定位。
+
+#### std::invoke：可调用对象中的特殊情况--成员函数，成员函数的调用形式为object.func()或ptr->func()，然而普通的形式为func()，为了实现统一，c++17中的std::invoke
+```cpp
+// 特别注意：这里是特殊情况，循环遍历，不能使用完美转发。完美转发意味着原来的值将不会再被使用，在这里第一次调用正常，但对于后续的调用，再次传入的参数不能确保还继续有效
+template<typename Iter, typename Callable, typename...Args>
+void foreach(Iter begin, Iter end, Callable calleble, Args&&...args) {
+	while(begin != end) {
+		std::invoke(callable, std::forward<Args>(args)...,*begin );
+		++begin;
+	}
+}
+
+// 正确的形式
+template<typename Iter, typename Callable, typename...Args>
+void foreach(Iter begin, Iter end, Callable callable, Args...args) {
+	while(begin != end) {
+		std::invoke(callable, args..., *begin);
+		++begin;
+	}
+}
+```
+- 然而对于普通情况下，使用std::invoke是可以使用完美转发的。std::invoke的常见用途:
+	- 包装一个函数调用(这里区别于循环遍历)
+	- 度量执行时间
+	- 创建一个新的线程之前执行一些准备工作
+	```cpp
+	/*
+	* decltype(auto): 从c++14开始，如果返回值要能够返回引用的形式，则不能仅仅使用auto，decltype(auto)是一个类型占位符，用于决定变量类型，返回值类型，模板调用参数类型等
+	*/
+	template<typename Callable, typename...Args>
+	decltype(auto) call(Callable&& callable, Args&&...arsg) {
+		return std::invoke(std::forward<Callable>(callable), std::forward<Args>(args)...);
+	}
+
+	// 如果要存储中间结果，进行一些操作，例如日志记录等
+	template<typename Callable, typename...Args>
+	decltype(auto) call(Callable&& callable, Args&&...args) {
+		// 这里不能：auto&& ret{},作为引用，ret在调用结束生命周期销毁，导致悬垂引用问题
+		decltype(auto) ret{std::invoke(std::forward<Callable>(callable), std::forward<Args>(args)...)};
+		//....
+		return ret;
+	}
+
+	/**
+	* note: 如果callable的返回是void，则会存在问题，因为decltype(void)是不允许的,void是不完整的类型。要解决这种情况，可以分别解决void和non-void
+	*/
+	template<typename Callable, typename...Args>
+	decltype(auto) call(Callable&& callable, Args&&...args) {
+		if constexpr (std::is_same_v<std::invoke_result_t<Callable, Args...>, void>) {
+			std::invoke(std::forward<Callable>(callable), std::forward<Args>(args)...);
+		} else {
+			decltype(auto) ret{std::invoke(std::forward<Callable>(callable), std::forward<Args>(args)...)};
+			// ...
+			return ret;
+		}
+	}
+
+	```
+
+- remove_const误用：usint type = std::remove_const_t<int const &>;，正确做法：using type = std::remove_const_t<std::remove_reference_t<int const &>>;或者std::decay_t<>
+
+- 类型萃取常见错误用法：
+	- make_unsigned_t<const int&> : 未定义的行为
+	- add_rvalue_reference<const int &>: 仍然为const int&，需要考虑引用折叠
+	
+
+- std::adress_of<>(): 用于获取任意一个类型的对象的地址
+	- 可以获取对象，乃至函数的地址
+	- 特殊情况，该对象重载了取地址运算符&(智能指针)，该函数仍然有效
+	```cpp
+	template<typename T>
+	void func(T&& t) {
+		auto p = &t;	// 可能存在问题
+		auto q = std::address_of<T>(t);
+	}
+	```
+
+- std::devlval<>(): 用作对一个类型的引用的占位符，或者一个明确类型的占位符。这个函数没有定义，是模板推导中的语法糖，因此不能定义。模板推导中，该函数的返回值是T&&或者void。没有返回值，从而不能用在具有运算的操作中，只能用于sizeof和decltype这种里面。在使用时，不能认为其创建了一个T类型的对象(并不会调用构造函数，即使其没有构造函数也可以)，而是拥有一个类型T。
+
+- 嵌套调用中操作临时值并对临时值进行完美妆发，使用auto&&声明变量
+```cpp
+template<typename T>
+void f(T&& t) {
+	auto && temp = get(std::forward<T>(t));
+	// ... 
+	
+	set(std::forward<T>(tmp));
+}
+```
+
+-  考虑一下传递引用int&作为模板参数，T推倒的类型是什么？最好避免引用:static_assert(!std::is_reference_v<T>, "Error:T is  reference type!");
+
+#### 延迟推断：在某些情况下，保留对不完整类型的支持(指针)
+```cpp
+template<typename T>
+class Test
+{
+	T* ptr;
+public:
+	std::conditional_t<std::is_move_constructible<T>, T&&, T&> foo();	// 由于std::conditional_t需要一个明确类型，导致这里失去对不完整类型的支持
+};
+
+template<typename T>
+class Test
+{
+T* ptr;
+
+public:
+	template<typename D = T>
+	std::conditional_t<std::is_move_constructible_v<D>, T&&, T&> foo();	// 延迟初始化，只有在调用foo的的时候才会实例化foo，此时已经知道了T的类型
+};
+
+```
+
+#### 总结：
+	1. 在模板里面转发一个值，该值不依赖于模板参数，使用auto&&
+	2. 当参数被声明转发引用时，如果传递是一个左值，对其修改会影响到外部，毕竟是左值引用
+	```cpp
+	template<typename T>
+	void foo(T&& t) {
+		t = 40;	
+	}
+	
+	int main()
+	{
+		int t = 10;
+		foo(t);
+	}
+	```
+	3. 当需要获取一个依赖于模板参数的对象的地址时，使用std::addressof，避免该类型重载了取地址运算符，例如智能指针
+	4. 当传递的模板参数可能是字符串常量时，使用decay或者推导指南\
+	5. 如果需要对数组类型进行重载，则情况不仅仅只有T[SZ]
+	6. 构造函数模板会禁止默认构造函数的生成，需要使用=default进行显式声明
+
+
+#### c++17中变量(静态数据成员 inline static)和变量模板可以内嵌，意味着可以跨翻译单元重复

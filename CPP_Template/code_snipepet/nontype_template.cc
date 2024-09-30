@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cassert>
 #include <array>
+#include <numeric>
+#include <vector>
 
 template<typename T, std::size_t MaxSize>
 class Stack;
@@ -83,6 +85,14 @@ bool  Stack<T, MaxSize>::empty() const {
 	return numSize == 0;
 }
 
+
+// none type parameter for function template
+template<typename T, int val>
+T addValue(T x) {
+	return x + val;
+}
+
+
 int main()
 {
 	Stack<int, 10> stack10;
@@ -93,6 +103,23 @@ int main()
 	}
 	
 	std::cout << stack10;
+
+	std::vector<int> datas(10);
+	std::iota(datas.begin(), datas.end(), 1);
+
+	auto printData = [&] {
+
+	std::cout << "vector data is: ";	
+		for(auto data : datas) {
+			std::cout << data << " ";
+		}
+		std::cout << std::endl;
+	};
+	printData();
+
+	std::transform(datas.begin(), datas.end(), addValue<int, 10>);
+
+	printData();
 
 	return 0;
 }
