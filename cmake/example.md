@@ -33,6 +33,10 @@
         - ARCHIVE:
             - windows上动态库的导入库：.lib
             - 静态库: .lib .a
+        - 如果Targetsw是库，则可以指定选项:
+            - NAMELINK_ONLY
+            - NAMELINK_SKIP
+            - 未指定，则默认都安装
         ```
         # 库的安装位置因链接器的行为在不同平台上不同而有所区分
         # linux上动态库通常安装在lib，windows上动态库安装在bin，和程序在一个目录
