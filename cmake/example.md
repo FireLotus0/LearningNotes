@@ -10,6 +10,7 @@
 - [目标的导入导出](#目标的导入导出)
     - [导入](#导入)
     - [导出](#导出)
+- [向编译器传递信息](#向编译器传递信息)
 - [高级命令](#高级命令)
     - [手动添加依赖关系](#手动添加依赖关系)
 
@@ -63,15 +64,124 @@
         ```
         install(CODE "message(\"Installing MyPrject\")")
         ```
-- 其他属性：
-    - DESTINATION: 绝对路径或者相对路径(结合CMAKE_INSTALL_PREFIX)
-    - CNFIGURATION: 指定配置下进行安装，例如DEBUG,RELEASE，参考缓存变量CMAKE_BUILD_TYPE
-    - COMPONENT, OPTIONAL
+    - 其他属性：
+        - DESTINATION: 绝对路径或者相对路径(结合CMAKE_INSTALL_PREFIX)
+        - CNFIGURATION: 指定配置下进行安装，例如DEBUG,RELEASE，参考缓存变量CMAKE_BUILD_TYPE
+        - COMPONENT, OPTIONAL
+- 生成包配置文件：
+    - configure_file: 输入一个文件，和模板文件一样，里面的变量最终被扩充或替换，cmake解析这个文件并生成配置文件：生成的配置文件通常位于构建目录中，与源码隔离
+        - 变量替换方式：  
+            1. #cmakedefine XX: 如果XX为TRUE，则等价于#define XX 否则注释忽略
+            2. \$\{VARIABLE\}: 值替换。在configure_file命令中传入@ONLY，将不会替换${VARIABLE} 
+            3. @VARIABLE@: 值替换  
+            projectConfig.h.in
+            ```
+            #cmakedefine HAS_FOO_CALL
+
+            #define PROJECT_BINARY_DIR "${CMAKE_BINARY_DIR}"
+            ``` 
+            CMakeLists.txt: 
+            ```
+            configure_file(
+                ${CMAKE_SOURCE_DIR}/projectConfig.h.in
+                ${PROJECT_BINARY_DIR}/projectConfig.h
+            )
+            ```
+    - 创建：  
+        ```
+        cmake_minimum_required(VERSION 3.1)
+        project(Test)
+        set(version 1.0)
+        
+        add_library(testLib STATIC test.c test.h)
+        add_executable(test_app test_app.c test_app.h)
+
+        install(FILES test.h DESTINATION include/test-${version})
+        install(TARGETS testLib test_app
+            DESTINATION lib/test-${version}
+            EXPORT test-targets
+        )
+        install(EXPORT test-targets
+            DESTINATION lib/test-${version}
+        )
+
+        # 在install tree中创建一个包配置文件
+        configure_file(
+            ${Test_SOURCE_DIR}/pkg/test-config.cmake.in
+            ${Test_BINARY_DIR}/pkg/test-config.cmake
+            @ONLY
+        )
+
+        configure_file(
+            ${Test_SOURCE_DIR}/test-config-version.cmake.in
+            ${Test_BINARY_DIR}/test-config-version.cmake
+            @ONLY
+        )
+
+        install(FILES ${Test_BINARY_DIR}/pkg/test-config.cmake
+            ${Test_BINARY_DIR}/test-config-version.cmake
+            DESTINATION lib/test-${version}
+        )
+        ```
+        test-configure.cmake.in:
+        ```
+        # 获取相对于当前位置的安装位置
+        get_filename_component(_dir "${CMAKE_CURRENT_LIS_FILE}" PATH)
+        get_filename_component(_prefix "${_dir}/../.." ABSOLUTE)
+        # 导入目标
+        include("${_prefix}/lib/test-@version@/test-targets.cmake")
+
+        set(Test_INCLUDE_DIRS "${_prefix}/include/test-@version@")
+        ```
+        test-config-version.cmake.in
+        ```
+        set(PACKAGE_VERSION "@version@")
+        if(NOT "${PACKAGE_FIND_VERSION}" VERSION_GREATER "@version@")
+            set(PACKAGE_VERSION_COMPATIBLE 1)
+            if("${PACKAGE_FIND_VERSION}" VERSION_EQUAL "@version@")
+                set(PACKAGE_VERSION_EXACT 1)
+            endif()
+        endif()
+        ```
+    - 使用：
+        ```
+        find_package(test 1.0 REQUIRED)
+        include_directories(${Test_INCLUDE_DIRS})
+        ```
 
  
 ### 库的链接
 #### 查找库和头文件
-常用命令：find_library, find_parth
+常用命令：find_library, find_path，find_file, find_package, find_program  
+所有find_*命令首先会搜索环境变量，而后搜索PATHS后面的参数
+- find_library：参数输入库名，不加前缀，后缀，cmake会根据平台进行扩展.
+    ```
+    find_library(TEST_LIB
+        NAMES TEST TEST2
+        PATHS /usr/lib /usr/local/lib
+    )
+    ```
+    windows上搜索注册表：
+    ```
+    # 执行注册表查询命令
+    execute_process(
+        COMMAND reg query "HKLM\\SOFTWARE\\SomeSoftware" /v "InstallLocation"
+        OUTPUT_VARIABLE LIBRARY_PATH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # 检查是否找到了路径
+    if(NOT LIBRARY_PATH)
+        message(FATAL_ERROR "Library path not found in registry.")
+    else()
+        message(STATUS "Library path found: ${LIBRARY_PATH}")
+        find_library(MY_LIBRARY NAMES mylib PATHS ${LIBRARY_PATH})
+    endif()
+    ```
+- find_package(< Package > [Version]): 通常会定义的=几个变量，XX_DIR, XX_INCLUDE_DIR, XX_FOUND
+    - Module Mode: 在CMAKE_MODULE_PATH和cmake安装位置查找FindPackage.cmake。module模式难以维护
+    - Config Mode: 查找PackageConfig.cmake文件或package-config.cmake。假设包的安装位置是Path，将会搜索路径：Path/lib/Package/PackageConfig.cmake。缓存变量Package_DIR由该命令创建。
+
 
 #### 根据配置链接
 ```
@@ -177,6 +287,10 @@ set_property(TARGET foo PROPERTY
     add_executable(generator generator.c)
     export(TARGETS genertor FILE MyProject-exports.cmake)
     ```
+
+### 向编译器传递信息
+- add_defination()
+- 使用预配置文件
 
 ### 高级命令
 #### 手动添加依赖关系
