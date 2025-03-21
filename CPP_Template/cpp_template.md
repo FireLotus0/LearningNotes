@@ -158,7 +158,7 @@ int main()
         Max<int, double, double>(1, 2.0);
         ``` 
 
-        缺点1：返回值类型可能为引用，为避免这种情况，->typename std::devay<decltype(t1 > t2 ? t1 : t2)>::type   
+        缺点1：返回值类型可能为引用，为避免这种情况，->typename std::decay<decltype(t1 > t2 ? t1 : t2)>::type   
         缺点2：返回值类型可能不依赖于传入的参数，使用declval  
     * 使用多个参数的通用类型：std::common_type
     ```cpp
