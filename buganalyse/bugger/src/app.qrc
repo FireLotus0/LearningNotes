@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>res/session.png</file>
+        <file>res/bugger.png</file>
+        <file>res/search_dev.png</file>
+        <file>res/exit.png</file>
+    </qresource>
+</RCC>
