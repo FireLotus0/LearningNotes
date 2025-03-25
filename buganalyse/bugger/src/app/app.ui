@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>1007</width>
-    <height>658</height>
+    <height>660</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">border-radius:8px 8px 8px 8px;</string>
+   <string notr="true"> 
+border-radius:8px 8px 8px 8px;
+ 
+</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
-   <property name="spacing">
-    <number>0</number>
-   </property>
+  <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -32,9 +32,12 @@
    <property name="bottomMargin">
     <number>0</number>
    </property>
-   <item>
+   <item row="0" column="0">
     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1">
      <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -107,7 +110,7 @@ border-bottom-right-radius:0px;
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_2">
+         <widget class="QPushButton" name="btn_quit">
           <property name="minimumSize">
            <size>
             <width>32</width>
@@ -123,11 +126,17 @@ border-bottom-right-radius:0px;
           <property name="styleSheet">
            <string notr="true">QPushButton {
 border-image: url(:/res/res/exit.png);
-border-radius:2px 2px 2px 2px;
+border-radius:3px 3px 3px 3px;
 }
 
 QPushButton:hover{
-background:#ffcfdf;
+background:#abedd8;
+border-radius:3px 3px 3px 3px;
+}
+
+QPushButton:pressed{
+background:#3d84a8;
+border-radius:3px 3px 3px 3px;
 }</string>
           </property>
           <property name="text">
@@ -141,18 +150,88 @@ background:#ffcfdf;
      <item>
       <widget class="QWidget" name="content" native="true">
        <property name="styleSheet">
-        <string notr="true">QWidget{
+        <string notr="true">QWidget#content{
 background-color:  #c2e9fb;
 border-top-left-radius:0px;
 border-top-right-radius:0px;
 }</string>
        </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="CustomBtnGroup" name="vTag" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>40</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>40</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QWidget#vTag{
+border-bottom-left-radius:8px;
+border-radius:8px;
+}</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSplitter" name="splitter">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <widget class="QTreeView" name="treeView">
+           <property name="styleSheet">
+            <string notr="true">background-color:  #c2e9fb;
+border-radius:0px;</string>
+           </property>
+          </widget>
+          <widget class="QWidget" name="widget" native="true">
+           <property name="styleSheet">
+            <string notr="true">
+QWidget#widget{
+background:green;
+border-radius:0px;
+border-bottom-right-radius:8px;
+}</string>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
     </layout>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CustomBtnGroup</class>
+   <extends>QWidget</extends>
+   <header>src/widgets/custombtngroup.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../app.qrc"/>
  </resources>

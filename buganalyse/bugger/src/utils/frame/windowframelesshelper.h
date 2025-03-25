@@ -5,6 +5,7 @@
 #include <qwidget.h>
 #include <qpushbutton.h>
 #include <type_traits>
+#include <qgraphicseffect.h>
 
 /**
      * @brief 记录当前鼠标在窗口中所在的区域
@@ -72,6 +73,12 @@ public:
 
         this->setAttribute(Qt::WA_DeleteOnClose);
         this->setAttribute(Qt::WA_ShowModal);
+        auto shadow = new QGraphicsDropShadowEffect(this);
+        shadow->setOffset(0, 0);
+        shadow->setColor(0x202020);
+        shadow->setBlurRadius(10);
+        this->setGraphicsEffect(shadow);
+        this->setContentsMargins(8, 8, 8, 8);
     }
 
     /**

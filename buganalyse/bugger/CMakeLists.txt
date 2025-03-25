@@ -18,8 +18,15 @@ set(SRC
     src/widgets/custombtngroup.h
     src/widgets/custombtngroup.cpp
 
+    src/dialog/info/infodlg.h
+    src/dialog/info/infodlg.cpp
+
     src/utils/frame/windowframelesshelper.h
     src/utils/frame/windowframelesshelper.cpp
+    src/utils/ssh/sessionmanager.h
+    src/utils/ssh/sessionmanager.cpp
+    src/utils/ssh/session.h
+    src/utils/ssh/session.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SRC})

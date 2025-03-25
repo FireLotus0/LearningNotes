@@ -4,5 +4,12 @@
         <file>res/bugger.png</file>
         <file>res/search_dev.png</file>
         <file>res/exit.png</file>
+        <file>res/setting.png</file>
+        <file>res/passwd.png</file>
+        <file>res/user.png</file>
+        <file>res/login.png</file>
+        <file>res/close.png</file>
+        <file>res/close_clicked.png</file>
+        <file>res/close_hover.png</file>
     </qresource>
 </RCC>

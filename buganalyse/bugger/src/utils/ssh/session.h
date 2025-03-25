@@ -1,15 +1,14 @@
-#include "app/app.h"
+#pragma once
 
-#include <iostream>
+#include <qobject.h>
 #include <libssh2.h>
 #include <libssh2_sftp.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <cstring>
 #include <cstdlib>
-#include <qapplication.h>
 
-
+/*
 void sftp_example(const char* hostname, const char* username, const char* password) {
     int rc;
     LIBSSH2_SESSION *session;
@@ -153,17 +152,12 @@ void sftp_example(const char* hostname, const char* username, const char* passwo
     WSACleanup();
 }
 
-int main(int argc, char** argv) {
-//    const char *hostname = "192.168.1.159"; // 替换为你的服务器地址
-//    const char *username = "root"; // 替换为你的用户名
-//    const char *password = "Xykj20160315"; // 替换为你的密码
-//
-//    sftp_example(hostname, username, password);
-//    return 0;
-    QApplication a(argc, argv);
+ * */
 
-    App app;
-    app.show();
+class Session : public QObject
+{
+public:
+    explicit Session(QObject *parent = nullptr);
 
-    a.exec();
-}
+
+};
