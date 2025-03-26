@@ -49,14 +49,15 @@ signals:
     void errorOccurred(const QString &error);
 
 protected slots:
-    virtual void onTaskFinished();
+//    virtual void onTaskFinished();
 
 private:
     template<typename T, typename Func, typename...Args>
     std::enable_if_t<std::is_member_function_pointer_v<Func>, void> executeAsync(Func func, Args&&...args) {
         auto watcher = new QFutureWatcher<T>;
         connect(watcher, &QFutureWatcher<int>::finished, this, [&, watcher]{
-            onTaskFinished();
+//            onTaskFinished();
+            printResult(taskType, isTaskSucceed(watcher->result()));
             watcher->deleteLater();
         });
         watcher->setFuture(QtConcurrent::run(this, func, std::forward<Args>(args)...));
@@ -66,7 +67,8 @@ private:
     std::enable_if_t<!std::is_member_function_pointer_v<Func>, void> executeAsync(Func func, Args&&...args) {
         auto watcher = new QFutureWatcher<T>;
         connect(watcher, &QFutureWatcher<int>::finished, this, [&, watcher]{
-            onTaskFinished();
+//            onTaskFinished();
+            printResult(taskType, isTaskSucceed(watcher->result()));
             watcher->deleteLater();
         });
         watcher->setFuture(QtConcurrent::run(func, std::forward<Args>(args)...));
@@ -86,6 +88,7 @@ private:
 
     int connectToServer();
 
+    int authUserPasswd();
 private:
     TaskType taskType;
     size_t bufferSz;

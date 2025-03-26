@@ -19,10 +19,6 @@ SshTask::~SshTask() {
 
 }
 
-void SshTask::onTaskFinished() {
-    qDebug() << "Task Finished: " << taskType;
-}
-
 void SshTask::printResult(SshTask::TaskType type, bool res) {
     QString taskStr = QMetaEnum::fromType<SshTask::TaskType>().valueToKey(type);
     if (!res) {
@@ -63,8 +59,7 @@ void SshTask::doTask() {
             break;
         }
         case PASSWD_VERIFY: {
-            executeAsync<int>(&libssh2_userauth_password_ex, session->sshSession, (CPTR)session->user.data(), (unsigned)session->user.size(),
-                              (CPTR)session->passwd.data(), (unsigned )session->passwd.size(), (void(*)(LIBSSH2_SESSION *session, char **, int *, void **))nullptr);
+            executeAsync<int>(this, &SshTask::authUserPasswd);
             break;
         }
         case PUB_KEY_VERIFY: {
@@ -127,6 +122,10 @@ int SshTask::connectToServer() {
     sin.sin_port = htons(22); // SSH 默认端口
     inet_pton(AF_INET, (const char*)session->ip.data(), &sin.sin_addr); // 将 IP 地址字符串转换为网络字节序
     return ::connect(session->sock, (struct sockaddr*)(&sin), sizeof(sin));
+}
+
+int SshTask::authUserPasswd() {
+    return  libssh2_userauth_password(session->sshSession, (CPTR)session->user.data(), (CPTR)session->passwd.data());
 }
 
 //void SshTask::connectSsh() {
