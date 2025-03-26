@@ -7,53 +7,14 @@
 #include <ws2tcpip.h>
 #include <cstring>
 #include <cstdlib>
+#include <QQueue>
+#include "sshtask.h"
+
+//class SshTask;
 
 /*
 void sftp_example(const char* hostname, const char* username, const char* password) {
     int rc;
-    LIBSSH2_SESSION *session;
-    LIBSSH2_SFTP *sftp_session;
-    LIBSSH2_SFTP_HANDLE *sftp_handle;
-    char *mem;
-    size_t memlen;
-
-    // 初始化 Windows Sockets
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "WSAStartup failed" << std::endl;
-        return;
-    }
-
-    // 创建 socket
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == INVALID_SOCKET) {
-        std::cerr << "Failed to create socket" << std::endl;
-        WSACleanup();
-        return;
-    }
-
-    // 设置服务器地址
-    sockaddr_in sin;
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(22); // SSH 默认端口
-    inet_pton(AF_INET, hostname, &sin.sin_addr); // 将 IP 地址字符串转换为网络字节序
-
-    // 连接到服务器
-    if (connect(sock, (struct sockaddr*)(&sin), sizeof(sin)) != 0) {
-        std::cerr << "Failed to connect to the server" << std::endl;
-        closesocket(sock);
-        WSACleanup();
-        return;
-    }
-
-    // 初始化 libssh2
-    if (libssh2_init(0) != 0) {
-        std::cerr << "Failed to initialize libssh2" << std::endl;
-        closesocket(sock);
-        WSACleanup();
-        return;
-    }
-
     // 创建 SSH 会话
     session = libssh2_session_init();
     if (!session) {
@@ -148,16 +109,32 @@ void sftp_example(const char* hostname, const char* username, const char* passwo
     libssh2_session_disconnect(session, "Normal Shutdown");
     libssh2_session_free(session);
     closesocket(sock);
-    libssh2_exit();
     WSACleanup();
 }
 
  * */
 
-class Session : public QObject
-{
+class Session : public QObject {
+Q_OBJECT
 public:
-    explicit Session(QObject *parent = nullptr);
+    explicit Session(QString ip, QString passwd, QString user, QObject *parent = nullptr);
 
+    ~Session();
 
+    void addTask(SshTask::TaskType taskType);
+
+public slots:
+    void onTaskFinished(SshTask::TaskType taskType);
+
+signals:
+    void errorOccurred(const QString &error);
+
+private:
+    QString ip, passwd, user;
+    LIBSSH2_SFTP *sftpSession{nullptr};
+    LIBSSH2_SFTP_HANDLE *sftpHandle{nullptr};
+    SOCKET sock = INVALID_SOCKET;
+    LIBSSH2_SESSION *sshSession{nullptr};
+    friend class SshTask;
+    QQueue<SshTask*> tasks;
 };

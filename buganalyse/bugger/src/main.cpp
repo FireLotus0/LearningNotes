@@ -1,4 +1,5 @@
 #include "app/app.h"
+#include "utils/ssh/sessionmanager.h"
 
 #include <iostream>
 #include <libssh2.h>
@@ -164,6 +165,8 @@ int main(int argc, char** argv) {
 
     App app;
     app.show();
+
+    SessionManager::getInstance().createSession("192.168.1.159", "Xykj20160315", "root");
 
     a.exec();
 }
