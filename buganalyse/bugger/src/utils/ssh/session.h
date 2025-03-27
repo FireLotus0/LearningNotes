@@ -8,7 +8,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <QQueue>
-#include "sshtask.h"
+#include "taskexecutor.h"
 
 //class SshTask;
 
@@ -121,10 +121,7 @@ public:
 
     ~Session();
 
-    void addTask(SshTask::TaskType taskType);
-
 public slots:
-    void onTaskFinished(SshTask::TaskType taskType);
 
 signals:
     void errorOccurred(const QString &error);
@@ -133,8 +130,9 @@ private:
     QString ip, passwd, user;
     LIBSSH2_SFTP *sftpSession{nullptr};
     LIBSSH2_SFTP_HANDLE *sftpHandle{nullptr};
+    LIBSSH2_CHANNEL *channel{nullptr};
     SOCKET sock = INVALID_SOCKET;
     LIBSSH2_SESSION *sshSession{nullptr};
-    friend class SshTask;
-    QQueue<SshTask*> tasks;
+    friend class TaskExecutor;
+    TaskExecutor* taskExecutor;
 };

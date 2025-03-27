@@ -982,4 +982,282 @@ Name Lookup的工作主要可以分为两大部分。
                                     // error: bind an rvalue reference to an lvalue
                 }
                 ```
-                
+                此处，f()的参数为forwarding reference，g()的参数为右值引用。
+
+                因此，当实参为左值时，f()的模板参数被推导为int&，g()的模板参数则被推导为int。而左值无法绑定到右值，于是编译出错。
+
+                再来看另一个例子：
+                ```cpp
+                // Example from ISO C++
+
+                template <class T>
+                struct A {
+                    template <class U>
+                    A(T&& t, U&& u, int*); // #1
+
+                    A(T&&, int*); // #2
+                };
+
+                template <class T> A(T&&, int*) -> A<T>; // #3
+                ```
+                对于#1，U&&为forwarding reference，而T&&并不是，因为它不是函数模板参数。于是，当使用#1初始化对象时，若第一个实参为左值，则T&&被推导为右值引用。由于左值无法绑定到右值，遂编译出错。但是第二个参数可以为左值，U会被推导为左值引用，次再施加引用折叠，最终依旧为左值引用，可以接收左值实参。若要使类模板参数也变为forwarding reference，可以使用CTAD，如#3所示。此时，T&&为forwarding reference，第一个实参为左值时，就可以正常触发引用折叠。
+    - Template Argument Substitution  
+        TAD告诉编译器如何推导模板参数类型，紧随其后的就是使用推导出来的类型替换模板参数，将模板实例化。这两个步骤密不可分，故在上节当中其实已经涉及了部分本节内容，这里进一步扩展。这里只讲三个重点。第一点，模板参数替换存在失败的可能性。模板替换并不总是会成功的，比如：
+        ```cpp
+        struct A { typedef int B; };
+
+        template <class T> void g(typename T::B*) // #1
+        template <class T> void g(T);             // #2
+
+        g<int>(0); // calls #2
+
+        ```
+        Name Lookup查找到了#1和#2的两个名称，然后对它们进行模板参数替换。然而，对于#1的参数替换并不能成功，因为int不存在成员类型B，此时模板参数替换失败。但是编译器并不会进行报错，只是将其从重载集中移除。这个特性就是广为熟知的SFINAE(Substitution Failure Is Not An Error)，后来大家发现该特性可以进一步利用起来，为模板施加约束。比如根据该原理可以实现一个enable_if工具，用来约束模板。
+        ```cpp
+
+        namespace mylib {
+
+            template <bool, typename = void>
+            struct enable_if {};
+
+            template <typename T>
+            struct enable_if<true, T> {
+                using type = T;
+            };
+
+            template <bool C, typename T = void>
+            using enable_if_t = typename enable_if<C, T>::type;
+
+        } // namespace mylib
+
+
+        template <typename T, mylib::enable_if_t<std::same_as<T, double>, bool> = true>
+        void f() {
+            std::cout << "A\n";
+        }
+
+        template <typename T, mylib::enable_if_t<std::same_as<T, int>, bool> = true>
+        void f() {
+            std::cout << "int\n"; 
+        }
+
+        int main() {
+            f<double>();  // calls #1
+            f<int>();     // calls #2
+        }
+        ```
+        enable_if早已加入了标准，这个的工具的原理就是利用模板替换失败的特性，将不符合条件的函数从重载集移除，从而实现正确的逻辑分派。SFINAE并非是专门针对类型约束而创造出来的，使用起来比较复杂，并不直观，已被C++20的Concepts取代。第二点，关于trailing return type与normal return type的本质区别。这二者的区别本质上就是Name Lookup的区别：normal return type是按照从左到右的词法顺序进行查找并替换的，而trailing return type因为存在占位符，打乱了常规的词法顺序，这使得它们存在一些细微的差异。比如一个简单的例子：
+        ```cpp
+        namespace N {
+            using X = int;
+            X f();
+        }
+
+        N::X N::f();      // normal return type
+        auto N::f() -> X; // trailing return type
+        ```
+        根据前面讲述的Qualified Name Lookup规则，normal return type的返回值必须使用N::X，否则将在全局查找。而trailing return type由于词法顺序不同，可以省略这个命名空间。当然trailing return type也并非总是比normal return type使用起来更好，看如下例子：
+        ```cpp
+        // Example from ISO C++
+
+        template <class T> struct A { using X = typename T::X; };
+
+        // normal return type
+        template <class T> typename T::X f(typename A<T>::X);
+        template <class T> void f(...);
+
+        // trailing return type
+        template <class T> auto g(typename A<T>::X) -> typename T::X;
+        template <class T> void g(...);
+
+
+        int main() {
+            f<int>(0); // #1 OK
+            g<int>(0); // #2 Error
+        }
+        ```
+        通常来说，这两种返回类型只是形式上的差异，是可以等价使用的，但此处却有着细微而本质的区别。#1都能成功调用，为什么改了个返回形式，#2就编译出错了？这是因为：在模板参数替换的时候，normal return type遵循从左向右的词法顺序，当它尝试替换T::X，发现实参类型int并没有成员X，于是依据SFINAE，该名称被舍弃。然后，编译器发现通用版本的名称可以成功替换，于是编译成功。而#2在模板参数替换的时候，首先跳过auto占位符，开始替换函数参数。当它尝试使用int替换A::X的时候，发现无法替换。但是A::X并不会触发SFINAE，而是产生hard error，于是编译失败。简单来说，此处，normal return type在触发hard error之前就触发了SFINAE，所以可以成功编译。第三点，forwarding reference的模板参数替换要点。看一个上周我在群内分享的一个例子：
+        ```cpp
+        template <class T>
+        struct S {
+            static void g(T&& t) {}
+            static void g(const T& t) {}
+        };
+
+
+        template <class T> void f(T&& t) {}
+        template <class T> void f(const T& t) {}
+
+        int main() {
+            int i = 1;
+
+            f<int&>(i);    // #1 OK
+            S<int&>::g(i); // #2 Error
+        }
+        ```
+        为什么#1可以通过编译，而#2却不可以呢？首先来分析#2，编译失败其实显而亦见。由于调用显式指定了模板参数，所以其实并没有参数推导，int&用于替换模板参数。对于T&&，替换为int&&&，1折叠后变为int&；对于const T&，替换为const (int&)&，等价于int& const&，而C++不支持top-level reference，int& const声明本身就是非法的，所以const被抛弃，剩下int&&，折叠为int&。于是重复定义，编译错误。而对于#1，它包含两个函数模板。若是同时替换，那么它们自然也会编译失败。但是，根据4.3将要介绍的规则：如果都是函数模板，那么更特殊的函数模板胜出。const T&比T&&更加特殊，因此f(T&&)最终被移除，只存在f(const T&)替换之后的函数，没有错误也是理所当然。
+    - Overload Resolution
+
+        经过Name Lookup和Template Handling两个阶段，编译器搜索到了所有相关重载函数名称，这些函数就称为candidate functions（候选函数）。前文提到过，Name Lookup仅仅只是进行名称查找，并不会检查这些函数的有效性。因此，candidate functions只是「一级筛选」的结果。重载决议，就是要在一级筛选的结果之上，选择出最佳的那个匹配函数。比如：参数个数是否匹配？实参和形参的类型是否相同？类型是否可以转换？这些都属于筛选准则。因此，这一步也可以称之为「二级筛选」。根据筛选准则，剔除掉无效函数，剩下的结果就称为viable functions（可行函数）。存在viable functions，就表示已经找到可以调用的声明了。但是，这个函数可能存在多个可用版本，此时，就需要进行「终极筛选」，选出最佳的匹配函数，即best viable function。终极筛选在标准中也称为Tiebreakers（决胜局）。终极筛选之后，如果只会留下一个函数，这个函数就是最终被调用的函数，重载决议成功；否则的话重载决议失败，程序错误。接下来，将从一级筛选开始，以一个完整的例子，为大家串起整个流程，顺便加深对前面各节内容的理解。
+        - Candidate functions  
+            一级筛选的结果是由Name Lookup查找出来的，包含成员和非成员函数。对于成员函数，它的第一个参数是一个额外的隐式对象参数，一般来说就是this指针。对于静态成员函数，大家都知道它没有this指针，然而事实上它也存在一个额外的隐式对象参数。究其原因，就是为了重载决议可以正常运行。可以看如下例子来进行理解。
+            ```cpp
+            struct S {
+                void f(long) {
+                    std::cout << "member version\n";
+                }
+                static void f(int) {
+                    std::cout << "static member version\n";
+                }
+            };
+
+            int main() {
+                S s;
+                s.f(1); // calls static member version
+            }
+            ```
+            此时，这两个成员函数实际上为：
+            ```cpp
+            f(S&, long); // member version
+            f(implicit object parameter, int); // static member version
+            ```
+            如果静态成员函数没有这个额外的隐式对象，那么其一，将可以定义一个参数完全相同的非静态成员；其二，重载决议将无法选择最佳的那个匹配函数（此处long需要转换，不是最佳匹配函数）。  
+            静态成员的这个隐式对象参数被定义为可以匹配任何参数，仅仅用于在重载决议阶段保证操作的一致性。  
+            对于非成员函数，则可以直接通过Unqualified Name Lookup和Qualified Name Lookup找到。同时，模板实例化后也会产生成员或非成员函数， 除了有些因为模板替换失败被移除，剩下的名称共同组成了candidate functions。
+        - Viable functions
+
+            二级筛选要在candidate functions的基础上，通过一些筛选准则来剔除不符合要求的函数，留下的就是viable functions。筛选准则主要看两个方面，一个是看参数匹配程度，另一个是看约束满足程度。约束满足就是看是否满足Concepts，这是C++20之后新增的一项检查。具体的检查流程如下所述。第一步，看参数个数是否匹配。假设实参个数为N，形参个数为M，则存在三种比较情况。如果N等于M，这种属于个数完全匹配，此类函数将被留下。如果N小于M，此时就需要看candidate functions是否存在默认参数，如果不存在，此类函数被淘汰。如果N大于M，此时就需要看candidate functions是否存在可变参数，如果不存在，此类函数被淘汰。第二步，是否满足约束。第一轮淘汰过后，剩下的函数如果存在Concepts约束，这些约束应该被满足。如果不满足，此类函数被淘汰。第三步，看参数是否匹配。实参类型可能和candidate functions完全匹配，也可能不完全匹配，此时这些参数需要存在隐式转换序列。可以是标准转换，也可以是用户自定义转换，也可以是省略操作符转换。这三步过后，留下的函数就称为viable functions，它们都有望成为最佳匹配函数。
+        - Tiebreakers
+            终极筛选也称为决胜局，重载决议的最后一步，将进行更加严格的匹配。第一，它会看参数的匹配程度。如前所述，实参类型与viable functions可能完全匹配，也可能需要转换，此时就存在更优的匹配选项。C++的类型转换有三种形式，标准转换、自定义转换和省略操作符转换。标准转换比自定义转换更好，自定义转换比省略操作符转换更好。对于标准转换，可以看下表。  
+            ![](./images/convert.jpg)
+            它们的匹配优先级也是自上往下的，即Exact Match比Promotion更好，Promotion比Conversion更好，可以理解为完全匹配、次级匹配和低级匹配。
+
+            看一个简单的例子：它们的匹配优先级也是自上往下的，即Exact Match比Promotion更好，Promotion比Conversion更好，可以理解为完全匹配、次级匹配和低级匹配。
+
+            看一个简单的例子：
+            ```CPP
+            void f(int);
+            void f(char);
+
+            int main() {
+                f(1); // f(int) wins
+            }
+            ```
+            此时，viable functions就有两个。而实参类型为int，f(int)不需要转换，而f(char)需要将int转换为char，因此前者胜出。如果实参类型为double，由于double转换为int和char属于相同等级，因此谁也不比谁好，产生ambiguous。再来看一个例子：
+            ```CPP
+            // Example from ISO C++
+
+            void f(const int*, short);
+            void f(int*, int);
+
+            int main() {
+                int i;
+                short s = 0;
+                f(&i, s);    // #1 Error, ambiguous
+                f(&i, 1L);   // #2 OK, f(int*, int) wins
+                f(&i, 'c');  // #3 OK, f(int*, int) wins
+            }
+            ```
+            这里存在两个viable functions，存在一场决胜局。#1处调用，第一个实参类型为int，第二个实参类型为short。对于前者来说，f(int, int)是更好的选择，而对于后者来说，f(const int*, short)才是更好的选择。此时将难分胜负，因此产生ambiguous。#2处调用，第二个实参类型为long，打成平局，但f(int*, int)在第一个实参匹配中胜出，因此最终被调用。#3处调用，第二个实参类型为char，char转换为int比转换为short更好，因此f(int*, int)依旧胜出。对于派生类，则子类向直接基类转换是更好的选择。
+
+            ```CPP
+            struct A {};
+            struct B : A {};
+            struct C : B {};
+
+            void f(A*) {
+                std::cout << "A*";
+            }
+            void f(B*) {
+                std::cout << "B*";
+            }
+
+            int main() {
+                C* pc;
+                f(pc); // f(B*) wins
+            }
+
+            ```
+            这里，C向B转换，比向A转换更好，所以f(B*)胜出。
+
+            最后再来看一个例子，包含三种形式的转换。
+            ```CPP
+            struct A {
+                operator int();
+            };
+
+            void f(A) {
+                std::cout << "standard conversion wins\n";
+            }
+
+            void f(int) {
+                std::cout << "user defined conversion wins\n";
+            }
+
+            void f(...) {
+                std::cout << "ellipsis conversion wins\n";
+            }
+
+            int main() {
+                A a;
+                f(a);
+            }
+
+            ```
+            最终匹配的优先级是从上往下的，标准转换是最优选择，自定义转换次之，省略操作符转换最差。
+
+            第二，如果同时出现模板函数和非模板函数，则非模板函数胜出。
+
+            例子如下：
+            ```CPP
+            void f(int) {
+                std::cout << "f(int) wins\n";
+            }
+
+            template <class T>
+            void f(T) {
+                std::cout << "function templates wins\n";
+            }
+
+            int main() {
+                f(1); // calls f(int)
+            }
+
+            ```
+            但若是非模板函数还需要参数转换，那么模板函数将胜出，因为模板函数可以完全匹配。第三，如果都是函数模板，那么更特殊的模板函数胜出。什么是更特殊的函数模板？其实指的就是更加具体的函数模板。越抽象的模板参数越通用，越具体的越特殊。举个例子，语言、汉语和普通话，语言可以表示汉语，汉语可以表示普通话，因此语言比汉语更抽象，汉语比普通话更抽象，普通话比汉语更特殊，汉语又比语言更特殊。越抽象越通用，越具体越精确，越精确就越可能是实际的调用需求，因此更特殊的函数模板胜出。比如在3.2节第三点提到的例子，const T&为何比T&&更特殊呢？这是因为，若形参类型为T，实参类型为const U，则T可以推导为const U，前者就可以表示后者。若是反过来，形参类型为const T，实参类型为U，此时就无法推导。因此const T&要更加特殊。第四，如果都函数都带有约束，那么满足更多约束的获胜。例子如下：
+            ```CPP
+            // Example from ISO C++
+
+                template<typename T> concept C1 = requires(T t) { --t; };
+                template<typename T> concept C2 = C1<T> && requires(T t) { *t; };      
+
+                template<C1 T> void f(T);          // #1
+                template<C2 T> void f(T);          // #2
+                template<class T> void g(T);       // #3
+                template<C1 T> void g(T);          // #4
+
+                int main() {
+                    f(0);       // selects #1
+                    f((int*)0); // selects #2
+                    g(true);    // selects #3 because C1<bool> is not satisfied         
+                    g(0);       // selects #4
+                }
+            ```
+            第五，如果一个是模板构造函数，一个是非模板构造函数，那么非模板版本获胜。
+
+            例子如下：
+            ```CPP
+            template <class T>
+            struct S {
+                S(T, T, int);                    // #1
+                template <class U> S(T, U, int); // #2
+            };
+
+            int main() {
+                // selects #1, generated from non-template constructor
+                S s(1, 2, 3);
+            }
+
+            ```
+            究其原因，还是非模板构造函数更加特殊。以上所列的规则都是比较常用的规则，更多规则大家可以参考cppreference。通过这些规则，就可以找出最佳匹配的那个函数。如果最后只剩下一个viable function，那么它就是best viable function。如果依旧存在多个函数，那么ambiguous。大家也许还不是特别清楚上述流程，那么接下来，我将以一个完整的例子来串起整个流程。
+  

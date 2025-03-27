@@ -29,8 +29,8 @@ set(SRC
     src/utils/ssh/sessionmanager.cpp
     src/utils/ssh/session.h
     src/utils/ssh/session.cpp
-    src/utils/ssh/sshtask.h
-    src/utils/ssh/sshtask.cpp
+    src/utils/ssh/taskexecutor.h
+    src/utils/ssh/taskexecutor.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SRC})

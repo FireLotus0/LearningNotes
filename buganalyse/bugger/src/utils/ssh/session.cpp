@@ -9,7 +9,11 @@ Session::Session(QString ip, QString passwd, QString user, QObject *parent)
     , user(std::move(user))
     , passwd(std::move(passwd))
 {
-    addTask(SshTask::SERVER_CONNECT);
+    sshSession = libssh2_session_init();
+    taskExecutor = new TaskExecutor(this);
+    taskExecutor->addTask(TaskExecutor::SERVER_CONNECT, &sock, ip);
+//    taskExecutor->addTask(TaskExecutor::SSH_HAND_SHAKE, &sock, ip);
+//    taskExecutor->addTask(TaskExecutor::PASSWD_VERIFY, sshSession, user, passwd);
 }
 
 Session::~Session() {
@@ -20,14 +24,4 @@ Session::~Session() {
         closesocket(sock);
     }
 }
-
-void Session::onTaskFinished(SshTask::TaskType taskType) {
-
-}
-
-void Session::addTask(SshTask::TaskType taskType) {
-    auto task = new SshTask(this, taskType);
-    task->doTask();
-}
-
 
