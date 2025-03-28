@@ -117,9 +117,12 @@ void sftp_example(const char* hostname, const char* username, const char* passwo
 class Session : public QObject {
 Q_OBJECT
 public:
-    explicit Session(QString ip, QString passwd, QString user, QObject *parent = nullptr);
+    explicit Session(const QString& ip, const QString& passwd, const QString& user, QObject *parent = nullptr);
 
     ~Session();
+
+private:
+    void init();
 
 public slots:
 

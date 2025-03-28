@@ -17,18 +17,7 @@ TaskExecutor::~TaskExecutor() {
 
 void TaskExecutor::printResult(TaskExecutor::TaskType type, bool res, int errCode) {
     QString taskStr = QMetaEnum::fromType<TaskExecutor::TaskType>().valueToKey(type);
-    QString resStr = "";
-    if (!res) {
-        if(type != SERVER_CONNECT && type != SSH_CONNECT) {
-//            libssh2_session_last_error(session->sshSession, &errBuf, &errBufSz, 1);
-            resStr = taskStr + " Failed: " + QString(errBuf);
-        } else {
-            resStr = taskStr  + " Failed: " + QString::number(errCode);
-        }
-    } else {
-        resStr = taskStr + " Success";
-    }
-
+    QString resStr = res ?  (taskStr + " Success") : (taskStr + " Failed");
     if (res) {
         qInfo() << resStr;
         emit taskFinished(type);
@@ -41,22 +30,16 @@ void TaskExecutor::printResult(TaskExecutor::TaskType type, bool res, int errCod
 }
 
 
-int TaskExecutor::connectToServer(SOCKET* socketPtr, const QString& ip) {
-    // 创建 socket
-    *socketPtr = socket(AF_INET, SOCK_STREAM, 0);
-    if (*socketPtr == INVALID_SOCKET) {
-        errorOccurred("Failed to create socket");
-    }
+int TaskExecutor::connectToServer(SOCKET sock, const QString& ip) {
     // 设置服务器地址
     sockaddr_in sin;
     sin.sin_family = AF_INET;
-    qDebug() << ip;
-    sin.sin_port = htons(22); // SSH 默认端口
-    auto sss = "192.168.1.159";
-    inet_pton(AF_INET, sss, &sin.sin_addr); // 将 IP 地址字符串转换为网络字节序 (const char*)session->ip.data()
-    auto rt = ::connect(*socketPtr, (struct sockaddr*)(&sin), sizeof(sin));
-    if(rt <= 0) {
-        qWarning() << "Socket Connect Error: " << WSAGetLastError();
+    qDebug() << "connect to: " << ip;
+    sin.sin_port = htons(22);
+    inet_pton(AF_INET, ip.toStdString().c_str(), &sin.sin_addr);
+    auto rt = ::connect(sock, (struct sockaddr*)(&sin), sizeof(sin));
+    if(rt != 0) {
+        qWarning() << "Socket Connect Error: " << WSAGetLastError() << " socket fd: " <<sock << " target ip: " << QString::fromLatin1(ip.toStdString().c_str(), 10);
     }
     return rt;
 }

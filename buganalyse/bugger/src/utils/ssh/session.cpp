@@ -3,17 +3,19 @@
 #include <utility>
 
 
-Session::Session(QString ip, QString passwd, QString user, QObject *parent)
+Session::Session(const QString& ip, const QString& passwd, const QString& user, QObject *parent)
     : QObject(parent)
-    , ip(std::move(ip))
-    , user(std::move(user))
-    , passwd(std::move(passwd))
+    , ip(ip)
+    , user(user)
+    , passwd(passwd)
 {
+    init();
     sshSession = libssh2_session_init();
+    Q_ASSERT(sshSession != nullptr);
     taskExecutor = new TaskExecutor(this);
-    taskExecutor->addTask(TaskExecutor::SERVER_CONNECT, &sock, ip);
-//    taskExecutor->addTask(TaskExecutor::SSH_HAND_SHAKE, &sock, ip);
-//    taskExecutor->addTask(TaskExecutor::PASSWD_VERIFY, sshSession, user, passwd);
+    taskExecutor->addTask<TaskExecutor::SERVER_CONNECT>(sock, ip);
+    taskExecutor->addTask<TaskExecutor::SSH_HAND_SHAKE>(sshSession, sock);
+    taskExecutor->addTask<TaskExecutor::PASSWD_VERIFY>(sshSession, user, passwd);
 }
 
 Session::~Session() {
@@ -22,6 +24,14 @@ Session::~Session() {
     }
     if(sock != INVALID_SOCKET) {
         closesocket(sock);
+    }
+}
+
+void Session::init() {
+    // 创建 socket
+    sock = socket(AF_INET, SOCK_STREAM, 0);;
+    if (sock == INVALID_SOCKET) {
+        errorOccurred("Failed to create socket");
     }
 }
 

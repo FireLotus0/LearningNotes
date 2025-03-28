@@ -26,7 +26,7 @@ SessionManager::~SessionManager() {
     }
 }
 
-void SessionManager::createSession(QString ip, QString passwd, QString user) {
+void SessionManager::createSession(const QString& ip, const QString& passwd, const QString& user) {
     if(wsValid) {
         auto session = new Session(ip, passwd, user);
     }

@@ -8,7 +8,7 @@ Q_OBJECT
 public:
     static SessionManager &getInstance();
 
-    void createSession(QString ip, QString passwd, QString user);
+    void createSession(const QString& ip, const QString& passwd, const QString& user);
 
 signals:
     void errorOccurred(const QString& str);
