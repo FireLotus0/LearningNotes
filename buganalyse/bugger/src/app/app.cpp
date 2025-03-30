@@ -3,6 +3,8 @@
 #include <QStyleOption>
 #include <qpainter.h>
 #include <qdebug.h>
+#include "src/widgets/sessioninfo/fileviewer.h"
+
 App::App(QWidget *parent)
         : WindowFramelessWidget<QWidget>(parent)
 {
@@ -14,6 +16,9 @@ App::App(QWidget *parent)
 
 void App::initUi() {
     ui.vTag->init(CustomBtnGroup::VERTICAL, QColor("#f7f6e7"), QColor("#c2e9fb"), {":/res/res/session.png", ":/res/res/search_dev.png", ":/res/res/setting.png"}, true);
+
+    auto fileViewer = new FileViewer(this);
+    ui.sessionInfo->addWidget(fileViewer);
 }
 
 void App::showEvent(QShowEvent *event) {

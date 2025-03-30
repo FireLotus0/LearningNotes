@@ -6,23 +6,54 @@
 #include <libssh2_sftp.h>
 #include <QtConcurrent>
 
-//        libssh2_session_disconnect(session, "Normal Shutdown");
-//        libssh2_session_free(session);
-//        closesocket(sock);
-//        libssh2_exit();
-//        WSACleanup();
+struct TaskEntityBase {
+    template<typename T>
+    bool isSucceed(T v) {
+        if constexpr (std::is_pointer_v<T>) {
+            return v != nullptr;
+        } else if constexpr (std::is_integral_v<T>) {
+            return v != 0;
+        }
+    }
+};
+
+template<typename Func, typename...Args>
+struct TaskEntity : public TaskEntityBase {
+    explicit TaskEntity(Func f, Args...args) {
+        func = [f, args...]()mutable {
+            return f(std::forward<Args>(args)...);
+        };
+    }
+
+    std::decay_t<std::invoke_result_t<Func, Args...>> operator()() {
+        return std::invoke(func);
+    }
+
+private:
+    Func func;
+};
+
+template<typename...Bases>
+struct ComposedTask : public Bases ... {
+    using Bases::operator()...;
+
+    int operator()() {
+        return (... && isSucceed(Bases::operator()()));
+    }
+};
+
 
 template<typename...Args>
 void printVarArgs(Args...args) {
-    auto tmp = {(qDebug()<< "Args: " << args << " ", 0)...};
+    auto tmp = {(qDebug() << "Args: " << &args << " ", 0)...};
 }
-
-class Session;
 
 class TaskExecutor : public QObject {
 Q_OBJECT
 public:
     enum TaskType {
+        NONE,
+        INIT_CONNECTION,
         /// 连接操作
         SERVER_CONNECT,         // 连接服务器
         SSH_HAND_SHAKE,         // SSH握手
@@ -48,6 +79,13 @@ public:
 
     Q_ENUM(TaskType)
 
+    enum ErrorLevel {
+        NORMAL,
+        FATAL
+    };
+
+    Q_ENUM(ErrorLevel)
+
 public:
     explicit TaskExecutor(QObject *parent = nullptr);
 
@@ -61,6 +99,12 @@ public:
     template<TaskType taskType, typename...Args>
     void addTask(Args &&...args);
 
+    void cancelCurTask();
+
+    void executeCurTask();
+
+    ErrorLevel getErrLelFromTask(TaskType taskType);
+
 private:
     /**
      * @brief 异步执行任务
@@ -71,7 +115,8 @@ private:
     std::enable_if_t<std::is_member_function_pointer_v<Func>, void>
     executeAsync(TaskType taskType, Func func, Args &&...args) {
         using RT = std::invoke_result_t<Func, TaskExecutor, Args...>;
-        watchFuture<RT>(taskType, QtConcurrent::run(this, func, std::forward<Args>(args)...));
+        curTask = taskType;
+        watchFuture<RT>(taskType)->setFuture(QtConcurrent::run(this, func, std::forward<Args>(args)...));
     }
 
     /**
@@ -83,7 +128,8 @@ private:
     std::enable_if_t<!std::is_member_function_pointer_v<Func>, void>
     executeAsync(TaskType taskType, Func func, Args &&...args) {
         using RT = std::invoke_result_t<Func, Args...>;
-        watchFuture<RT>(taskType, QtConcurrent::run(func, std::forward<Args>(args)...));
+        curTask = taskType;
+        watchFuture<RT>(taskType)->setFuture(QtConcurrent::run(func, std::forward<Args>(args)...));
     }
 
     /**
@@ -93,16 +139,13 @@ private:
     */
     template<typename T>
     bool isTaskSucceed(T val, TaskType taskType) {
+        bool res;
         if constexpr (std::is_pointer_v<T>) {
-            return val != nullptr;
+            res = val != nullptr;
         } else if constexpr (std::is_integral_v<T>) {
-            switch ((int) taskType) {
-                case (int) SERVER_CONNECT:
-                    return val == 0;
-                default:
-                    return val == 0;
-            }
+            res = val == 0;
         }
+        return res;
     }
 
     /**
@@ -111,23 +154,17 @@ private:
     * @param TaskType 任务类型
     */
     template<typename T>
-    void watchFuture(TaskType taskType, const QFuture<T>& future) {
+    QFutureWatcher<T> *watchFuture(TaskType taskType) {
         QString typeName = typeid(T).name();
         if (!watchers.contains(typeName)) {
             auto watcher = new QFutureWatcher<T>;
             watchers[typeName] = (QFutureInterfaceBase *) (watcher);
-            qDebug() << "Type Name Index: " << typeName;
-            watcher->setFuture(future);
             connect(watcher, &QFutureWatcher<T>::finished, this, [&, taskType, watcher] {
-                printResult(taskType, isTaskSucceed(watcher->result(), taskType), WSAGetLastError());
+                onTaskFinished(curTask, isTaskSucceed(watcher->result(), curTask));
             });
         }
+        return (QFutureWatcher<T> *) watchers[typeName];
     }
-
-    /**
-     * @brief 打印执行结果
-     */
-    void printResult(TaskType type, bool res, int errCode = 0);
 
     /**
      * @brief 当前任务执行完成回调，继续执行队列任务
@@ -135,10 +172,10 @@ private:
     void onTaskFinished(TaskType type, bool res);
 
 signals:
+    void taskFinished(TaskType type, bool res);
 
-    void taskFinished(TaskType type);
-
-    void errorOccurred(const QString &error);
+private:
+   int initConnection(SOCKET sock, const QString& ip, LIBSSH2_SESSION *session, const QString& user, const QString& passwd);
 
 private:
     // socket网络连接
@@ -148,7 +185,7 @@ private:
     int authUserPasswd(LIBSSH2_SESSION *session, const QString &user, const QString &passwd);
 
     // 创建通道
-    LIBSSH2_CHANNEL *openChannel(LIBSSH2_SESSION *session, LIBSSH2_CHANNEL *&channel);
+    LIBSSH2_CHANNEL *openChannel(LIBSSH2_SESSION *session, LIBSSH2_CHANNEL **channel);
 
 private:
     size_t bufferSz = 1024; // 数据缓冲区
@@ -156,18 +193,19 @@ private:
     char *buf, *errBuf;
     QMap<QString, QFutureInterfaceBase *> watchers; // {typeid.name, QFutureWatcher<T>*}
     QQueue<QPair<TaskType, std::function<void()>>> taskCache;   // 任务队列
+    TaskType curTask = NONE;
 };
 
 template<TaskExecutor::TaskType taskType, typename...Args>
 void TaskExecutor::addTask(Args &&...args) {
+//    if(taskType == OPEN_CHANNEL) {
+//        printVarArgs(std::forward<Args>(args)...);
+//    }
     auto func = [this, args...]() mutable {
-        if constexpr (taskType == SSH_HAND_SHAKE) {
-            printVarArgs(args...);
-            executeAsync(taskType, &libssh2_session_handshake, std::forward<Args>(args)...);
-        } else if constexpr (taskType == SERVER_CONNECT) {
-            executeAsync(taskType, &TaskExecutor::connectToServer, std::forward<Args>(args)...);
-        } else if constexpr (taskType == PASSWD_VERIFY) {
-            executeAsync(taskType, &TaskExecutor::authUserPasswd, std::forward<Args>(args)...);
+        if constexpr (taskType == INIT_CONNECTION) {
+            executeAsync(taskType, &TaskExecutor::initConnection, std::forward<Args>(args)...);
+        } else if constexpr (taskType == OPEN_CHANNEL) {
+            executeAsync(taskType, &TaskExecutor::openChannel, std::forward<Args>(args)...);
         }
     };
     bool needInvoke = taskCache.isEmpty();
@@ -176,3 +214,9 @@ void TaskExecutor::addTask(Args &&...args) {
         std::invoke(taskCache.head().second);
     }
 }
+
+struct TaskFactory {
+    auto getTaskObject(TaskExecutor::TaskType...) {
+
+    }
+};

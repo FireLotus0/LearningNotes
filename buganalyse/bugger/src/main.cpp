@@ -166,7 +166,11 @@ int main(int argc, char** argv) {
     App app;
     app.show();
 
-    SessionManager::getInstance().createSession("192.168.1.159", "Xykj20160315", "root");
+    QObject::connect(&SessionManager::getInstance(), &SessionManager::errorOccurred, [&](const QString& error){
+        qWarning() << "ERROR: " << error;
+    });
+
+    SessionManager::getInstance().createSession("139.9.189.48", "rootlyf", "lyf");
 
     a.exec();
 }

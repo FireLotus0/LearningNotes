@@ -10,5 +10,10 @@
         <file>res/close.png</file>
         <file>res/close_clicked.png</file>
         <file>res/close_hover.png</file>
+        <file>res/new_connection.png</file>
+        <file>res/checked.png</file>
+        <file>res/file.png</file>
+        <file>res/folder.png</file>
+        <file>res/unchecked.png</file>
     </qresource>
 </RCC>
