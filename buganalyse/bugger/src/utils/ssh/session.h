@@ -3,6 +3,8 @@
 #include <qobject.h>
 #include <libssh2.h>
 #include <libssh2_sftp.h>
+//#include "libssh2.h"
+//#include "libssh2_sftp.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <cstring>
@@ -40,7 +42,7 @@ private:
     QString ip, passwd, user;
     LIBSSH2_SFTP *sftpSession{nullptr};
     LIBSSH2_SFTP_HANDLE *sftpHandle{nullptr};
-    LIBSSH2_CHANNEL *channel{nullptr};
+    LIBSSH2_CHANNEL *channel = nullptr;
     SOCKET sock = INVALID_SOCKET;
     LIBSSH2_SESSION *sshSession{nullptr};
     friend class TaskExecutor;

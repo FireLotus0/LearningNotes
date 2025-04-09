@@ -6,43 +6,6 @@
 #include <libssh2_sftp.h>
 #include <QtConcurrent>
 
-struct TaskEntityBase {
-    template<typename T>
-    bool isSucceed(T v) {
-        if constexpr (std::is_pointer_v<T>) {
-            return v != nullptr;
-        } else if constexpr (std::is_integral_v<T>) {
-            return v != 0;
-        }
-    }
-};
-
-template<typename Func, typename...Args>
-struct TaskEntity : public TaskEntityBase {
-    explicit TaskEntity(Func f, Args...args) {
-        func = [f, args...]()mutable {
-            return f(std::forward<Args>(args)...);
-        };
-    }
-
-    std::decay_t<std::invoke_result_t<Func, Args...>> operator()() {
-        return std::invoke(func);
-    }
-
-private:
-    Func func;
-};
-
-template<typename...Bases>
-struct ComposedTask : public Bases ... {
-    using Bases::operator()...;
-
-    int operator()() {
-        return (... && isSucceed(Bases::operator()()));
-    }
-};
-
-
 template<typename...Args>
 void printVarArgs(Args...args) {
     auto tmp = {(qDebug() << "Args: " << &args << " ", 0)...};
@@ -198,9 +161,6 @@ private:
 
 template<TaskExecutor::TaskType taskType, typename...Args>
 void TaskExecutor::addTask(Args &&...args) {
-//    if(taskType == OPEN_CHANNEL) {
-//        printVarArgs(std::forward<Args>(args)...);
-//    }
     auto func = [this, args...]() mutable {
         if constexpr (taskType == INIT_CONNECTION) {
             executeAsync(taskType, &TaskExecutor::initConnection, std::forward<Args>(args)...);
@@ -214,9 +174,3 @@ void TaskExecutor::addTask(Args &&...args) {
         std::invoke(taskCache.head().second);
     }
 }
-
-struct TaskFactory {
-    auto getTaskObject(TaskExecutor::TaskType...) {
-
-    }
-};
