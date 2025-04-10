@@ -7,5 +7,9 @@ TaskEntityBase::TaskEntityBase(TaskType taskType)
 }
 
 std::string TaskEntityBase::taskResultStr(bool result) const {
-    return  Utils::curTime() + ": "  + TASK_NAME[taskType] + (result ? "Finish!" : "Failed!");
+    return  Utils::curTime() + ": "  + TASK_NAME[taskType] + (result ? " Finish! " : " Failed! ");
+}
+
+std::string TaskEntityBase::getTaskName() const {
+    return  TASK_NAME[taskType];
 }

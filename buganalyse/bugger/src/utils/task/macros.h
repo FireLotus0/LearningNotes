@@ -13,21 +13,17 @@ enum SessionType {
 /*-------------------------------*/
 
 #define SESSION_NAME(x) #x
-const char *SessionName[] = {
+static std::string SessionName[] = {
         MAKE_SESSION_TYPE(SESSION_NAME)
 };
 
 /*------ Task Type Define ------*/
 #define MAKE_ITEM(GEN) \
     GEN(INIT_CONNECTION), \
-    GEN(SERVER_CONNECT), \
-    GEN(SSH_HAND_SHAKE), \
-    GEN(PASSWD_VERIFY), \
-    GEN(PUB_KEY_VERIFY), \
-    GEN(OPEN_CHANNEL), \
-    GEN(EXECUTE_CMD), \
-    GEN(READ_DATA), \
-    GEN(WRITE_DATA), \
+    GEN(CREATE_CHANNEL), \
+    GEN(RUN_CMD), \
+    GEN(SCP_UPLOAD), \
+    GEN(SCP_DOWNLOAD), \
     GEN(CHANNEL_FORWARD), \
     GEN(SFTP_CREATE), \
     GEN(SFTP_OPEN_FILE), \
@@ -45,7 +41,7 @@ enum TaskType {
 };
 
 #define TASK_NAME(x) #x
-const char *TASK_NAME[] = {
+static std::string TASK_NAME[] = {
         MAKE_ITEM(TASK_NAME)
 };
 /*-------------------------------*/
@@ -61,6 +57,6 @@ enum SessionState {
 };
 
 #define SESSION_STATE_NAME(x) #x
-const char *SessionStateName[] = {
+static std::string SessionStateName[] = {
         MAKE_SESSION_STATE(SESSION_STATE_NAME)
 };

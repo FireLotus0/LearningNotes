@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taskentity.h"
+#include "taskexecutor.h"
 #include <libssh2.h>
 #include <libssh2_sftp.h>
 #include <winsock2.h>
@@ -12,36 +13,41 @@
 
 class Session{
 public:
-    Session(SessionType sessionType, const std::string& user, const std::string& passwd, const std::string& ip);
+    Session(SessionType sessionType, const std::string& user, const std::string& passwd, const std::string& ip, unsigned short sshPort = 22, const std::string& id ="");
 
     virtual ~Session();
-    template<typename Func, typename...Args>
-    void addTask(Func&& func, Args&&...args) {
-        std::lock_guard<std::mutex> lk(mt);
+
+    bool isRunning() const;
+protected:
+    template<typename Caller, typename Func, typename...Args>
+    void addTask(TaskType taskType, Caller* caller, Func&& func, Args...args) { // 改成Args&&...args就不行
         if(sessionState == SessionState::INVALID) {
-            std::cerr << "Add Task Failed: SessionType=" << SessionName[sessionType] << "  SessionState=" << SessionStateName[sessionState]
-                << std::endl;
+            std::cerr <<__FILE__ << ":" << __LINE__ << "Add Task Failed: Session State Is Invalid" << std::endl;
             return;
-        } else {
-            auto task = new TaskEntity<Func, Args...>(std::forward<Func>(func), std::forward<Args>(args)...);
-            tasks.push(task);
         }
-        if(sessionState == SessionState::IDLE) {
-            cv.notify_one();
-        }
+        TASK_EXECUTOR.addTask(id, taskType, std::forward<Func>(func), std::move(caller), std::forward<Args>(args)...);
     }
 
+
+    bool initConnection();
+
+    bool connectToHost();
+
+    bool handshake();
+
+    bool authPasswd();
+
+    bool isSessionValid();
+
 protected:
-    SOCKET socket;
+    SOCKET sock;
+    bool sockConnValid;
     std::string ip;
+    std::string id;
+    unsigned short port;
     std::string user;
     std::string passwd;
     SessionState sessionState;
     SessionType sessionType;
     LIBSSH2_SESSION *session{};
-
-protected:
-    std::mutex mt;
-    std::condition_variable cv;
-    std::queue<TaskEntityBase*> tasks;
 };
