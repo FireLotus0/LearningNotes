@@ -21,20 +21,7 @@ void TaskBase::run(std::future<void> &&future) {
         std::unique_lock<std::mutex> lk(mt);
         cv.wait(lk, [&]{ return !taskQueue.empty(); });
         auto task = taskQueue.front();
-        auto result = (*task)();
+        auto result = task->execute();
         std::cout << task->taskResultStr(result) << std::endl;
     }
-}
-
-std::string TaskBase::getCurTime() {
-    auto now = std::chrono::system_clock::now();
-    auto now_t = std::chrono::system_clock::to_time_t(now);
-    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-    char timeBuf[40]{};
-    std::strftime(timeBuf, 40, "%Y-%m-%d %H:%M:%S", std::localtime(&now_t));
-    std::string res(timeBuf);
-
-    std::stringstream ss;
-    ss << timeBuf << "." << std::setw(3) << std::setfill('0') << std::to_string(milliseconds.count()) << " ";
-    return ss.str();
 }

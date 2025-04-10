@@ -29,8 +29,6 @@ public:
 
     void run(std::future<void>&& future);
 
-    static std::string getCurTime();
-
 private:
     std::mutex mt;
     std::condition_variable cv;
