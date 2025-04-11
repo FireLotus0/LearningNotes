@@ -1,23 +1,20 @@
 #include "session.h"
-#include "taskexecutor.h"
+#include "utils/task/taskexecutor.h"
 #include <cassert>
 
-Session::Session(SessionType sessionType, const std::string &user, const std::string &passwd, const std::string &ip, unsigned short sshPort, const std::string& sessionId)
+Session::Session(SessionType sessionType, const std::string &user, const std::string &passwd, const std::string &ip, const std::string& sessionName, unsigned int id, unsigned short sshPort)
     : sessionType(sessionType)
     , user(user)
     , passwd(passwd)
     , ip(ip)
+    , sessionName(sessionName)
+    , id(id)
     , port(sshPort)
 {
     sock = INVALID_SOCKET;
     sockConnValid = false;
     sessionState = SessionState::IDLE;
-    if(sessionId.empty()) {
-        id = user + std::string("@") + ip;
-    } else {
-        id = sessionId;
-    }
-    TASK_EXECUTOR.addTask(sessionId, TaskType::INIT_CONNECTION, &Session::initConnection, this);
+    TASK_EXECUTOR.addTask(id, TaskType::INIT_CONNECTION, &Session::initConnection, this);
 }
 
 Session::~Session() {
@@ -87,4 +84,20 @@ bool Session::isSessionValid() {
 
 bool Session::isRunning() const {
     return sessionState == SessionState::RUNNING;
+}
+
+void Session::registerCallback(TaskType taskType, QObject *object, const std::string &methodName) {
+    auto methodIndex = object->metaObject()->indexOfMethod(methodName.c_str());
+    assert(methodIndex != -1);
+    auto metaMethod = object->metaObject()->method(methodIndex);
+    callbacks[taskType] = std::make_pair(object, metaMethod);
+}
+
+
+bool Session::isTaskTypeRemove(TaskType taskType) {
+    if(taskType == TaskType::REMOVE_ALL_TASK) {
+        callbacks[taskType].second.invoke(callbacks[taskType].first, Qt::QueuedConnection, Q_ARG(unsigned int, id));
+        return true;
+    }
+    return false;
 }

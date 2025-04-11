@@ -1,8 +1,11 @@
 #pragma once
 
 #include "ui_app.h"
-#include "src/utils/frame/windowframelesshelper.h"
+#include "utils/sessionmanager/sessionmanager.h"
+#include "src/widgets/frame/windowframelesshelper.h"
+
 #include <qwidget.h>
+#include <qvector.h>
 
 class App : public WindowFramelessWidget<QWidget> {
     Q_OBJECT
@@ -19,4 +22,6 @@ private:
 
 private:
     Ui::App ui;
+    SessionManager* sessionManager;
+    QVector<unsigned> scpSessions, cmdSessions;
 };

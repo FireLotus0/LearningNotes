@@ -11,34 +11,30 @@ set(SRC
     widgets/custombtngroup.cpp
     widgets/sessioninfo/fileviewer.h
     widgets/sessioninfo/fileviewer.cpp
-
+    widgets/frame/windowframelesshelper.h
+    widgets/frame/windowframelesshelper.cpp
 
     dialog/info/infodlg.h
     dialog/info/infodlg.cpp
 
-    utils/frame/windowframelesshelper.h
-    utils/frame/windowframelesshelper.cpp
+    utils/sessionmanager/sessionmanager.h
+    utils/sessionmanager/sessionmanager.cpp
 
-    #    utils/ssh/sessionmanager.h
-    #    utils/ssh/sessionmanager.cpp
-    #    utils/ssh/session.h
-    #    utils/ssh/session.cpp
-    #    utils/ssh/taskexecutor.h
-    #    utils/ssh/taskexecutor.cpp
+    utils/utils.h
+    utils/utils.cpp
+    utils/macros.h
 
-    utils/task/macros.h
-    utils/task/session.h
-    utils/task/session.cpp
-    utils/task/utils.h
-    utils/task/utils.cpp
     utils/task/taskentity.h
     utils/task/taskentity.cpp
     utils/task/taskexecutor.h
     utils/task/taskexecutor.cpp
-    utils/task/channelsession.h
-    utils/task/channelsession.cpp
-    utils/task/scpsession.h
-    utils/task/scpsession.cpp
+
+    utils/session/session.h
+    utils/session/session.cpp
+    utils/session/channelsession.h
+    utils/session/channelsession.cpp
+    utils/session/scpsession.h
+    utils/session/scpsession.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SRC})

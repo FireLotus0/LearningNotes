@@ -1,5 +1,5 @@
-#include "channelsession.h"
-#include "scpsession.h"
+#include "src/utils/session/channelsession.h"
+#include "src/utils/session/scpsession.h"
 
 #include <filesystem>
 

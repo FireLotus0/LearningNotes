@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 /*------ Session Type Define ------*/
 #define MAKE_SESSION_TYPE(GEN) \
@@ -18,7 +19,8 @@ static std::string SessionName[] = {
 };
 
 /*------ Task Type Define ------*/
-#define MAKE_ITEM(GEN) \
+#define MAKE_TASK_TYPE(GEN) \
+    GEN(REMOVE_ALL_TASK), \
     GEN(INIT_CONNECTION), \
     GEN(CREATE_CHANNEL), \
     GEN(RUN_CMD), \
@@ -37,12 +39,12 @@ static std::string SessionName[] = {
 
 #define TASK_ENUM(x) x
 enum TaskType {
-    MAKE_ITEM(TASK_ENUM)
+    MAKE_TASK_TYPE(TASK_ENUM)
 };
 
 #define TASK_NAME(x) #x
 static std::string TASK_NAME[] = {
-        MAKE_ITEM(TASK_NAME)
+        MAKE_TASK_TYPE(TASK_NAME)
 };
 /*-------------------------------*/
 

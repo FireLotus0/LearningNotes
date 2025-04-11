@@ -7,11 +7,13 @@
 class ChannelSession : public Session
 {
 public:
-    ChannelSession(const std::string& user, const std::string& passwd, const std::string& ip, unsigned short sshPort = 22, const std::string& id ="");
+    ChannelSession(const std::string& user, const std::string& passwd, const std::string& ip, const std::string& sessionName, unsigned int id, unsigned short sshPort = 22);
 
     ~ChannelSession() override;
 
     void addCmdTask(const std::string& cmd);
+
+    void executeCallback(TaskType taskType) override;
 
 private:
     bool initChannel();

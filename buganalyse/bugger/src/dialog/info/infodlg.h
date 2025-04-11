@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/utils/frame/windowframelesshelper.h"
+#include "src/widgets/frame/windowframelesshelper.h"
 #include "ui_InfoDlg.h"
 #include <qdialog.h>
 #include <QQueue>

@@ -1,5 +1,5 @@
 #include "taskentity.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 TaskEntityBase::TaskEntityBase(TaskType taskType)
     : taskType(taskType)

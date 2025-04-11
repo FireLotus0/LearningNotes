@@ -1,13 +1,12 @@
 #include <cassert>
 #include "channelsession.h"
-#include "taskexecutor.h"
+#include "utils/task/taskexecutor.h"
 
-ChannelSession::ChannelSession(const std::string &user, const std::string &passwd, const std::string &ip, unsigned short sshPort, const std::string &id)
-    : Session(SessionType::SHELL, user, passwd, ip, sshPort, id)
+ChannelSession::ChannelSession(const std::string &user, const std::string &passwd, const std::string &ip, const std::string& sessionName, unsigned int id,  unsigned short sshPort)
+    : Session(SessionType::SHELL, user, passwd, ip, sessionName, id, sshPort)
 {
     channel = nullptr;
     channelValid = false;
-//    TASK_EXECUTOR.addTask(id, TaskType::CREATE_CHANNEL, &ChannelSession::initChannel, this);
     addTask(TaskType::CREATE_CHANNEL, this,  &ChannelSession::initChannel);
 }
 
@@ -36,10 +35,10 @@ bool ChannelSession::initChannel() {
 }
 
 bool ChannelSession::runCommand(const std::string &command) {
+    isTaskSucceed = false;
     if(channelValid) {
         if (libssh2_channel_exec(channel, command.c_str()) != 0) {
             std::cerr << __FILE__ << ":" << __LINE__ << " Command Failed: CMD=" << command << " Err=" << libssh2_session_last_error(session, NULL, NULL, 0) << std::endl;
-            return false;
         } else {
             int bytes_read;
             char buffer[1024];
@@ -51,19 +50,30 @@ bool ChannelSession::runCommand(const std::string &command) {
                     resBuf << buffer;
                 } else if (bytes_read == 0) {
                     std::cout << "Command Finish: " << resBuf.str() << std::endl;
-                    return true;
+                    isTaskSucceed = true;
+                    break;
                 } else {
                     std::cerr << __FILE__ << ":" << __LINE__ << " Command Failed: CMD=" << command << " Err=" << libssh2_session_last_error(session, NULL, NULL, 0) << std::endl;
-                    return false;
+                    isTaskSucceed = false;
+                    break;
                 }
             }
         }
-    } else {
-        return false;
     }
+    return isTaskSucceed;
 }
 
 void ChannelSession::addCmdTask(const std::string &cmd) {
-//    TASK_EXECUTOR.addTask(id, TaskType::RUN_CMD, &ChannelSession::runCommand, this, std::forward<const std::string>(cmd));
     addTask(TaskType::RUN_CMD, this, &ChannelSession::runCommand, cmd);
+}
+
+void ChannelSession::executeCallback(TaskType taskType) {
+    if(isTaskTypeRemove(taskType)) {
+        return;
+    }
+    auto iter = callbacks.find(taskType);
+    if(iter != callbacks.end()) {
+        auto obj = iter->second.first;
+        iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool , isTaskSucceed), Q_ARG(QString, QString::fromStdString(resBuf.str())));
+    }
 }

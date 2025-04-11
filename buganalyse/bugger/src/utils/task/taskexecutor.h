@@ -1,7 +1,7 @@
 #pragma once
 
 #include "taskentity.h"
-#include "utils.h"
+#include "utils/utils.h"
 #include <mutex>
 #include <thread>
 #include <condition_variable>
@@ -10,6 +10,7 @@
 #include <chrono>
 #include <string>
 #include <iostream>
+#include <qobject.h>
 
 #define TASK_CHECK_STOP_INTERVAL 10
 
@@ -18,16 +19,18 @@ public:
     static TaskExecutor &getInstance();
 
     template<typename Func, typename...Args>
-    void addTask(const std::string& sessionId, TaskType taskType, Func &&func, Args &&...args) {
-        std::lock_guard<std::mutex> lk(mt);
-        auto iter = tasks.find(sessionId);
-        if(iter == tasks.end()) {
-            tasks[sessionId] = std::queue<TaskEntityBase*>{};
+    void addTask(unsigned int sessionId, TaskType taskType, Func &&func, Args &&...args) {
+        std::lock_guard<std::mutex> lk(taskMt);
+        auto iter = sessionTasks.find(sessionId);
+        if(iter == sessionTasks.end()) {
+            sessionTasks[sessionId] = std::make_pair(-1, std::queue<TaskEntityBase*>{});
         }
         auto task = new TaskEntity(taskType, std::forward<Func>(func), std::forward<Args>(args)...);
-        tasks[sessionId].push(task);
+        sessionTasks[sessionId].second.push(task);
         cv.notify_one();
     }
+
+    void removeTask(unsigned int id);
 
     void run(std::shared_future<void> future);
 
@@ -52,16 +55,16 @@ private:
     TaskExecutor &operator=(TaskExecutor &&) = delete;
 
 private:
-    std::mutex mt;
     bool running;
     unsigned threadCount;
+    std::mutex taskMt;
     std::condition_variable cv;
-    std::unordered_map<std::string, std::queue<TaskEntityBase *>> tasks;
-    std::unordered_map<std::thread::id, Session*> sessionMapThr;
     std::shared_future<void> stopFuture;
     std::promise<void> stopPromise;
     std::vector<std::thread> threads;
-
+    std::hash<std::thread::id> thrIdHasher;
+    /// MAP: SessionId--> {HashCode(ThreadId), task queue}
+    std::unordered_map<unsigned int, std::pair<std::size_t, std::queue<TaskEntityBase *>>> sessionTasks;
 private:
     inline static std::once_flag initFlag;
     inline static TaskExecutor* instance{nullptr};
