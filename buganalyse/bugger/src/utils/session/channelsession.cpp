@@ -77,3 +77,7 @@ void ChannelSession::executeCallback(TaskType taskType) {
         iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool , isTaskSucceed), Q_ARG(QString, QString::fromStdString(resBuf.str())));
     }
 }
+
+SessionType ChannelSession::sessionType() const {
+    return SessionType::SHELL;
+}

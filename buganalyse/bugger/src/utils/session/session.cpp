@@ -3,7 +3,7 @@
 #include <cassert>
 
 Session::Session(SessionType sessionType, const std::string &user, const std::string &passwd, const std::string &ip, const std::string& sessionName, unsigned int id, unsigned short sshPort)
-    : sessionType(sessionType)
+    : type(sessionType)
     , user(user)
     , passwd(passwd)
     , ip(ip)
@@ -87,7 +87,7 @@ bool Session::isRunning() const {
 }
 
 void Session::registerCallback(TaskType taskType, QObject *object, const std::string &methodName) {
-    auto methodIndex = object->metaObject()->indexOfMethod(methodName.c_str());
+    auto methodIndex = object->metaObject()->indexOfSlot(methodName.c_str());
     assert(methodIndex != -1);
     auto metaMethod = object->metaObject()->method(methodIndex);
     callbacks[taskType] = std::make_pair(object, metaMethod);

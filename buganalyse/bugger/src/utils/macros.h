@@ -26,16 +26,18 @@ static std::string SessionName[] = {
     GEN(RUN_CMD), \
     GEN(SCP_UPLOAD), \
     GEN(SCP_DOWNLOAD), \
-    GEN(CHANNEL_FORWARD), \
-    GEN(SFTP_CREATE), \
+    GEN(SFTP_CREATE),       \
+    GEN(SFTP_UPLOAD),       \
+    GEN(SFTP_DOWNLOAD),       \
     GEN(SFTP_OPEN_FILE), \
     GEN(SFTP_READ_FILE), \
     GEN(SFTP_WRITE_FILE), \
     GEN(SFTP_CLOSE_FILE), \
     GEN(SFTP_REMOVE_FILE), \
-    GEN(SFTP_MK_DIR), \
+    GEN(SFTP_MAKE_DIR), \
     GEN(SFTP_OPEN_DIR), \
-    GEN(SFTP_READ_DIR)
+    GEN(SFTP_READ_DIR),     \
+    GEN(SFTP_REMOVE_DIR)
 
 #define TASK_ENUM(x) x
 enum TaskType {

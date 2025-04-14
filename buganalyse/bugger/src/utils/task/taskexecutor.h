@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include <qobject.h>
+#include <qdebug.h>
 
 #define TASK_CHECK_STOP_INTERVAL 10
 
@@ -23,8 +24,9 @@ public:
         std::lock_guard<std::mutex> lk(taskMt);
         auto iter = sessionTasks.find(sessionId);
         if(iter == sessionTasks.end()) {
-            sessionTasks[sessionId] = std::make_pair(-1, std::queue<TaskEntityBase*>{});
+            sessionTasks[sessionId] = std::make_pair(INT64_MAX, std::queue<TaskEntityBase*>{});
         }
+        qDebug() << sessionTasks[sessionId].first;
         auto task = new TaskEntity(taskType, std::forward<Func>(func), std::forward<Args>(args)...);
         sessionTasks[sessionId].second.push(task);
         cv.notify_one();

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "utils/utils.h"
 #include "taskexecutor.h"
 
@@ -7,8 +8,7 @@
 #include <winsock2.h>
 #include <libssh2.h>
 
-TaskExecutor::TaskExecutor()
-{
+TaskExecutor::TaskExecutor() {
     running = false;
     threadCount = std::thread::hardware_concurrency() - 1;
     stopFuture = stopPromise.get_future().share();
@@ -19,14 +19,14 @@ TaskExecutor::TaskExecutor()
         std::cerr << Utils::curTime() << "WSAStartup failed" << std::endl;
         return;
     }
-    if(libssh2_init(0) != 0){
-        std::cerr << Utils::curTime() <<  "WSAStartup failed" << std::endl;
+    if (libssh2_init(0) != 0) {
+        std::cerr << Utils::curTime() << "WSAStartup failed" << std::endl;
     }
 }
 
 TaskExecutor::~TaskExecutor() {
-    for(auto& thr : threads) {
-        if(thr.joinable()) {
+    for (auto &thr: threads) {
+        if (thr.joinable()) {
             thr.join();
         }
     }
@@ -35,44 +35,49 @@ TaskExecutor::~TaskExecutor() {
 }
 
 void TaskExecutor::run(std::shared_future<void> future) {
-    while(future.wait_for(std::chrono::milliseconds(TASK_CHECK_STOP_INTERVAL)) == std::future_status::timeout) {
+    while (future.wait_for(std::chrono::milliseconds(TASK_CHECK_STOP_INTERVAL)) == std::future_status::timeout) {
         std::unique_lock<std::mutex> lk(taskMt);
-        TaskEntityBase* taskPtr{nullptr};
-        std::size_t curThrId = thrIdHasher(std::this_thread::get_id()), taskThrId = -1;
+        TaskEntityBase *taskPtr{nullptr};
+        std::size_t curThrId = thrIdHasher(std::this_thread::get_id()), taskThrId = 0;
         unsigned int sessionId;
-        for(auto& sessionTask : sessionTasks) {
-            if(sessionTask.second.second.empty()) {
+        bool findTask = false;
+        for (auto &sessionTask: sessionTasks) {
+            if (sessionTask.second.second.empty()) {
                 continue;
             } else {
-                taskPtr = sessionTask.second.second.front();
-                sessionId = sessionTask.first;
-                taskThrId = sessionTask.second.first;
-                sessionTask.second.second.pop();
-                break;
+                if (sessionTask.second.first == INT64_MAX) {   // 第一次获取任务
+                    findTask = true;
+                    sessionTask.second.first = curThrId;
+                } else if (sessionTask.second.first == curThrId) {
+                    findTask = true;
+                }
+                std::cout << "TaskType:" << TASK_NAME[sessionTask.second.second.front()->taskType] << " TaskThrID=" << sessionTask.second.first
+                    << "   CurThrID=" << curThrId << std::endl;
+                if(findTask && !sessionTask.second.second.empty()) {
+                    taskPtr = sessionTask.second.second.front();
+                    sessionId = sessionTask.first;
+                    taskThrId = sessionTask.second.first;
+                    sessionTask.second.second.pop();
+                    break;
+                }
             }
         }
-        if(taskPtr == nullptr) {
-            sessionTasks.clear();
-            cv.wait(lk, [&]{ return !sessionTasks.empty(); });
+        if (taskPtr == nullptr) {
+            cv.wait(lk, [&] { return !sessionTasks.empty(); });
         } else {
-            if(taskThrId == -1) {   // 第一次获取任务
-                sessionTasks[sessionId].first = curThrId;
-            } else if(taskThrId == curThrId) {
-                // 移除所有任务
-                if(taskPtr->taskType == TaskType::REMOVE_ALL_TASK) {
-                    sessionTasks.erase(sessionId);
-                }
-                lk.unlock();
-                bool isSucceed = taskPtr->execute();
-                std::cout << taskPtr->taskResultStr(isSucceed) << std::endl;
-                delete taskPtr;
+            if (taskPtr->taskType == TaskType::REMOVE_ALL_TASK) {
+                sessionTasks.erase(sessionId); // 移除所有任务
             }
+            lk.unlock();
+            bool isSucceed = taskPtr->execute();
+            std::cout << taskPtr->taskResultStr(isSucceed) << std::endl;
+            delete taskPtr;
         }
     }
 }
 
 TaskExecutor &TaskExecutor::getInstance() {
-    std::call_once(initFlag, [&]{
+    std::call_once(initFlag, [&] {
         instance = new TaskExecutor;
     });
     return *instance;
@@ -83,12 +88,12 @@ bool TaskExecutor::isRunning() const {
 }
 
 void TaskExecutor::start(int thrCount) {
-    if(isRunning()) {
+    if (isRunning()) {
         return;
     }
     threadCount = thrCount;
-    for(int i = 0; i < thrCount; i++) {
-        threads.emplace_back(std::move(std::thread(&TaskExecutor::run, (TaskExecutor*)this, stopFuture)));
+    for (int i = 0; i < thrCount; i++) {
+        threads.emplace_back(std::move(std::thread(&TaskExecutor::run, (TaskExecutor *) this, stopFuture)));
     }
 }
 
@@ -99,7 +104,7 @@ void TaskExecutor::stop() {
 void TaskExecutor::printTasks() {
     std::lock_guard<std::mutex> lk(taskMt);
     std::stringstream ss;
-    for(auto& task : sessionTasks) {
+    for (auto &task: sessionTasks) {
         ss << task.first;
 //        for(auto& t : task.second) {
 //

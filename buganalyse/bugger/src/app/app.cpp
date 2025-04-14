@@ -29,7 +29,7 @@ void App::showEvent(QShowEvent *event) {
     initUi();
     QWidget::showEvent(event);
 
-    scpSessions.push_back(sessionManager->createSession(SessionType::SHELL, "root", "Xykj20160315", "192.168.1.159").second);
+    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "lyf", "rootlyf", "139.9.189.48").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SHELL, "root", "Xykj20160315", "192.168.1.159").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SHELL, "root", "Xykj20160315", "192.168.1.159").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SHELL, "root", "Xykj20160315", "192.168.1.159").second);
@@ -37,17 +37,15 @@ void App::showEvent(QShowEvent *event) {
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "root", "Xykj20160315", "192.168.1.159").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "root", "Xykj20160315", "192.168.1.159").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "root", "Xykj20160315", "192.168.1.159").second);
-    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "root", "Xykj20160315", "192.168.1.159").second);
+//    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "lyf", "rootlyf", "139.9.189.48").second);
 
-    QList<QString> localFiles = {"E:\\test\\err.txt", "E:\\test\\info.txt", "E:\\test\\test.py", "E:\\test\\testSteps.txt"};
-    QList<QString> remoteFiles = {"/root/err.txt", "/root/info.txt", "/root/test.py", "/root/testSteps.txt"};
+    QList<QString> localFiles = {"E:\\tmp\\err.txt", "E:\\tmp\\info.txt", "E:\\tmp\\tmp.py", "E:\\tmp\\testSteps.txt"};
+    QList<QString> remoteFiles = {"/home/lyf/err.txt", "/home/lyf/info.txt", "/home/lyf/tmp.py", "/home/lyf/testSteps.txt"};
 
 
-    for(int i = 0; i < 2; i++) {
-        QTimer::singleShot((i + 1) * 2000, [&, localFiles, remoteFiles, i]{
-            sessionManager->scpTransfer(scpSessions[i], localFiles[i], remoteFiles[i], true);
-        });
-    }
+
+    sessionManager->scpTransfer(scpSessions[0], localFiles[0], remoteFiles[0], true);
+
 }
 
 void App::on_btn_quit_clicked() {

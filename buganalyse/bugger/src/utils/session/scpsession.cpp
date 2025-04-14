@@ -42,7 +42,7 @@ bool ScpSession::uploadFile(const std::string &remoteFile, const std::string &lo
             std::cerr << __FILE__ << __LINE__ << " Scp Upload File Failed: Write Data Failed: " << libssh2_session_last_error(session, NULL, NULL, 0) << std::endl;
         }
         releaseChannel(true);
-        isTaskSucceed = rt > 0;
+        isTaskSucceed = rt >= 0;
     }
     return isTaskSucceed;
 }
@@ -100,4 +100,8 @@ void ScpSession::executeCallback(TaskType taskType) {
         iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed), Q_ARG(QString, QString::fromStdString(rFile)),
                                    Q_ARG(QString, QString::fromStdString(lFile)));
     }
+}
+
+SessionType ScpSession::sessionType() const {
+    return SCP;
 }

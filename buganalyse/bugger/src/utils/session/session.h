@@ -34,6 +34,8 @@ public:
 
     virtual void executeCallback(TaskType taskType) = 0;
 
+    virtual SessionType sessionType() const = 0;
+
 protected:
     bool initConnection();
 
@@ -57,7 +59,7 @@ protected:
     bool sockConnValid;
     bool isTaskSucceed = false;
     unsigned short port;
-    SessionType sessionType;
+    SessionType type;
     SessionState sessionState;
     LIBSSH2_SESSION *session{};
     std::unordered_map<TaskType, std::pair<QObject*, QMetaMethod>> callbacks;

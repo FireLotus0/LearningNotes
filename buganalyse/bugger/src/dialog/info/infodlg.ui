@@ -6,17 +6,11 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>330</width>
-    <height>170</height>
+    <width>446</width>
+    <height>211</height>
    </rect>
   </property>
   <property name="minimumSize">
-   <size>
-    <width>330</width>
-    <height>170</height>
-   </size>
-  </property>
-  <property name="maximumSize">
    <size>
     <width>330</width>
     <height>170</height>
@@ -127,14 +121,18 @@ background:transparent;
            </property>
            <property name="styleSheet">
             <string notr="true">QPushButton {
-border-image: url(:/res/icons_close.png);
-border-radius:0px;
+	border-image: url(:/res/res/close.png);
 }
 
-QPushButton:hover {
-border-image: url(:/res/icons_close.png);
-background:	#F5F5F5;
+QPushButton:hover{
+	border-image: url(:/res/res/close_hover.png);
 }
+
+QPushButton:pressed{
+	border-image: url(:/res/res/close_clicked.png);
+}
+
+
 
 </string>
            </property>

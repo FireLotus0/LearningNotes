@@ -2,6 +2,7 @@
 
 #include "utils/session/scpsession.h"
 #include "utils/session/channelsession.h"
+#include "utils/session/sftpsession.h"
 
 #include <qobject.h>
 #include <qmap.h>
@@ -17,6 +18,12 @@ public:
 
     void scpTransfer(unsigned int sessionId, const QString& localFile, const QString& remoteFile, bool isUpload);
 
+    void sftpTransfer(unsigned int sessionId, const QString& localFile, const QString& remoteFile, bool isUpload);
+
+    void sftpReadDirInfo(unsigned int sessionId, const QString& dirName);
+
+    void sftpRemoveFile(unsigned int sessionId, const QString& remoteFile);
+
     void executeShellCmd(unsigned int sessionId, const QString& cmd);
 
 public slots:
@@ -28,6 +35,11 @@ public slots:
 
     void onRemoveSessionTask(unsigned int sessionId);
 
+    void onSftpTransferFinished(bool success, const QString& remoteFile, const QString& localFile);
+
+    void onSftpReadDirFinished(bool success, const QString& remoteDir, const QVector<SftpSession::FileInfo>& data);
+
+    void onSftpRemoveFileFinished(bool success, const QString& remoteFile);
 private:
     QMap<unsigned, Session *> sessions;
 };

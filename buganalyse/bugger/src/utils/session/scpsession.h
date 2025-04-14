@@ -13,6 +13,7 @@ public:
 
     void executeCallback(TaskType taskType) override;
 
+    SessionType sessionType() const override;
 private:
     bool uploadFile(const std::string& remoteFile, const std::string& localFile);
 

@@ -50,7 +50,7 @@ struct TaskEntity : public TaskEntityBase {
 
     bool execute() override {
         bool succeed = true;
-        if constexpr (std::is_invocable_v<Func>) {
+        if constexpr (std::is_member_function_pointer_v<Func>) {
             succeed = this->isSucceed(std::apply(func, params));
         }
         std::get<0>(params)->executeCallback(taskType);
