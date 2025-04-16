@@ -26,7 +26,6 @@ public:
         if(iter == sessionTasks.end()) {
             sessionTasks[sessionId] = std::make_pair(INT64_MAX, std::queue<TaskEntityBase*>{});
         }
-        qDebug() << sessionTasks[sessionId].first;
         auto task = new TaskEntity(taskType, std::forward<Func>(func), std::forward<Args>(args)...);
         sessionTasks[sessionId].second.push(task);
         cv.notify_one();
@@ -43,11 +42,8 @@ public:
     void stop();
 
     void printTasks();
-private:
-    TaskExecutor();
 
-    ~TaskExecutor();
-
+public:
     TaskExecutor(const TaskExecutor &) = delete;
 
     TaskExecutor(TaskExecutor &&) = delete;
@@ -55,6 +51,10 @@ private:
     TaskExecutor &operator=(const TaskExecutor &) = delete;
 
     TaskExecutor &operator=(TaskExecutor &&) = delete;
+private:
+    TaskExecutor();
+
+    ~TaskExecutor();
 
 private:
     bool running;

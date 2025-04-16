@@ -16,6 +16,8 @@ set(SRC
 
     dialog/info/infodlg.h
     dialog/info/infodlg.cpp
+    dialog/login/logindlg.h
+    dialog/login/logindlg.cpp
 
     utils/sessionmanager/sessionmanager.h
     utils/sessionmanager/sessionmanager.cpp

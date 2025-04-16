@@ -29,7 +29,7 @@ void App::showEvent(QShowEvent *event) {
     initUi();
     QWidget::showEvent(event);
 
-    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "lyf", "rootlyf", "139.9.189.48").second);
+//    scpSessions.push_back(sessionManager->createSession(SessionType::SCP, "lyf", "rootlyf", "139.9.189.48").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SHELL, "root", "Xykj20160315", "192.168.1.159").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SHELL, "root", "Xykj20160315", "192.168.1.159").second);
 //    scpSessions.push_back(sessionManager->createSession(SessionType::SHELL, "root", "Xykj20160315", "192.168.1.159").second);
@@ -44,7 +44,7 @@ void App::showEvent(QShowEvent *event) {
 
 
 
-    sessionManager->scpTransfer(scpSessions[0], localFiles[0], remoteFiles[0], true);
+//    sessionManager->scpTransfer(scpSessions[0], localFiles[0], remoteFiles[0], true);
 
 }
 

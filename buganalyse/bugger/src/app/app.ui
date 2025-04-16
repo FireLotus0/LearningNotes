@@ -46,7 +46,7 @@ border-radius:8px 8px 8px 8px;
      <property name="styleSheet">
       <string notr="true">QWidget#title{
 background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-stop:0 #0ba360 ,stop:1 #3cba92);
+stop:0 #d9ffd3, stop:0.5 #B0FBA5 ,stop:1 #7bb074);
 
 border-bottom-left-radius:0px;
 
@@ -126,12 +126,12 @@ border-radius:3px 3px 3px 3px;
 }
 
 QPushButton:hover{
-background:#abedd8;
+background:#CED094;
 border-radius:3px 3px 3px 3px;
 }
 
 QPushButton:pressed{
-background:#3d84a8;
+background:#BFC274;
 border-radius:3px 3px 3px 3px;
 }</string>
         </property>
@@ -153,8 +153,8 @@ border-radius:3px 3px 3px 3px;
      </property>
      <property name="styleSheet">
       <string notr="true">.QWidget{
-background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-stop:0 #eea2a2 ,stop:0.19 #bbc1bf, stop:0.42 #57c6e1, stop:0.79  #b49fda, stop:1 #7ac5d8);
+background-color:  #c2e9fb;
+
 border-radius:0px;
 }</string>
      </property>
@@ -263,7 +263,7 @@ border-radius:8px;
          </property>
          <widget class="QWidget" name="page">
           <property name="styleSheet">
-           <string notr="true">background:red;</string>
+           <string notr="true"/>
           </property>
          </widget>
         </widget>

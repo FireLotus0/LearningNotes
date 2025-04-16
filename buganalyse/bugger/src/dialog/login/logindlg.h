@@ -1,9 +1,20 @@
 #pragma once
 
-#include <qobject.h>
+#include "src/widgets/frame/windowframelesshelper.h"
+#include "ui_login.h"
+#include <qdialog.h>
 
 
-class LoginDlg : public QObject {
+class LoginDlg : public WindowFramelessWidget<QDialog> {
+    Q_OBJECT
 public:
-    explicit LoginDlg(QObject *parent = nullptr);
+    explicit LoginDlg(QWidget *parent = nullptr);
+
+
+
+private:
+    void init();
+
+private:
+    Ui::Login ui;
 };
