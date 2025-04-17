@@ -13,7 +13,6 @@ SftpSession::FileInfo::FileInfo(const std::string &name, const std::string &entr
 SftpSession::SftpSession(const std::string &user, const std::string &passwd, const std::string &ip, const std::string &sessionName, unsigned int id, unsigned short sshPort)
     : Session(SessionType::SFTP, user, passwd, ip, sessionName, id, sshPort)
 {
-    addTask(TaskType::SFTP_CREATE, this, &SftpSession::initSftp);
 }
 
 SftpSession::~SftpSession() {
@@ -152,4 +151,8 @@ void SftpSession::executeCallback(TaskType taskType) {
         }
 
     }
+}
+
+void SftpSession::addCreateTask() {
+    addTask(TaskType::SFTP_CREATE, this, &SftpSession::initSftp);
 }

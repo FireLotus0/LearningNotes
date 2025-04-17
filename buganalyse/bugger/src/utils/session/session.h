@@ -49,6 +49,7 @@ protected:
 
     bool isTaskTypeRemove(TaskType taskType);
 
+    virtual void addCreateTask() = 0;
 protected:
     SOCKET sock;
     std::string ip;

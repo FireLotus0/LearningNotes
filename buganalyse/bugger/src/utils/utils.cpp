@@ -14,8 +14,7 @@ std::string curTime() {
     char timeBuf[40]{0};
     std::strftime(timeBuf, 40, "%Y-%m-%d %H:%M:%S", std::localtime(&now_t));
     std::stringstream ss;
-    ss << __FILE__ << ":" <<__LINE__ << "---";
-    ss << timeBuf << "." << std::setw(3) << std::setfill('0') << std::to_string(milliseconds.count()) << "  ";
+    ss << timeBuf << "." << std::setw(3) << std::setfill('0') << std::to_string(milliseconds.count());
     return ss.str();
 }
 

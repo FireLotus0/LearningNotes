@@ -19,14 +19,12 @@ SessionManager::createSession(SessionType sessionType, const QString &user, cons
     auto uuidBytes = hashRes.left(16);
     auto uuidStr = QUuid::fromRfc4122(uuidBytes).toString();
     QString name = (sessionName.isEmpty() ? user + "@" + "ip" : sessionName) + uuidStr.mid(1, uuidStr.size() - 2);
-    qDebug() << "name is " << name;
     auto sessionId = qHash(name);
     Q_ASSERT(!sessions.contains(sessionId));
     Session *session{};
     switch (sessionType) {
         case SessionType::SHELL: {
-            session = new ChannelSession(user.toStdString(), passwd.toStdString(), ip.toStdString(), name.toStdString(),
-                                         sessionId, sshPort);
+            session = new ChannelSession(user.toStdString(), passwd.toStdString(), ip.toStdString(), name.toStdString(), sessionId, sshPort);
             session->registerCallback(TaskType::RUN_CMD, this, "onCommandFinished(bool,QString)");
             break;
         }
@@ -67,34 +65,15 @@ void SessionManager::onRemoveSessionTask(unsigned int sessionId) {
 }
 
 void SessionManager::onScpUploadFinished(bool success, const QString &remoteFile, const QString &localFile) {
-    InfoDlg infoDlg;
-    QString info;
-    if (success) {
-        info = localFile + " 已上传至 " + remoteFile;
-    } else {
-        info = "SCP文件上传失败:本地路径: " + localFile + " 远程路径:" + remoteFile;
-    }
-    infoDlg.setStateStr(!success, info);
-    infoDlg.exec();
+    sigScpUploadFinished(success, remoteFile, localFile);
 }
 
 void SessionManager::onScpDownloadFinished(bool success, const QString &remoteFile, const QString &localFile) {
-    InfoDlg infoDlg;
-    QString info;
-    if(success) {
-        info = remoteFile + " 已下载至 " + localFile;
-    } else {
-        info = "SCP文件下载失败: 远程路径: " + remoteFile + " 下载路径: " + localFile;
-    }
-    infoDlg.setStateStr(!success, info);
-    infoDlg.exec();
+    sigScpDownloadFinished(success, remoteFile, localFile);
 }
 
 void SessionManager::onCommandFinished(bool success, const QString &output) {
-    InfoDlg infoDlg;
-    QString info;
-    infoDlg.setStateStr(!success, "命令执行结果:" + output);
-    infoDlg.exec();
+    sigCommandFinished(success, output);
 }
 
 void SessionManager::scpTransfer(unsigned int sessionId, const QString &localFile, const QString &remoteFile,
@@ -113,14 +92,18 @@ void SessionManager::executeShellCmd(unsigned int sessionId, const QString &cmd)
 }
 
 void SessionManager::onSftpTransferFinished(bool success, const QString &remoteFile, const QString &localFile) {
-
+    sigSftpTransferFinished(success, remoteFile, localFile);
 }
 
-void SessionManager::onSftpReadDirFinished(bool success, const QString &remoteDir,
-                                           const QVector<SftpSession::FileInfo> &data) {
-
+void SessionManager::onSftpReadDirFinished(bool success, const QString &remoteDir, const QVector<SftpSession::FileInfo> &data) {
+    sigSftpReadDirFinished(success, remoteDir, data);
 }
 
 void SessionManager::onSftpRemoveFileFinished(bool success, const QString &remoteFile) {
+    sigSftpRemoveFileFinished(success, remoteFile);
+}
 
+SessionManager* SessionManager::instance() {
+    static auto* sessionManager = new SessionManager;
+    return sessionManager;
 }

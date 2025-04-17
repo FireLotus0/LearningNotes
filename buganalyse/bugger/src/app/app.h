@@ -15,6 +15,7 @@ public:
 private slots:
     void on_btn_quit_clicked();
 
+    void on_btn_new_connect_clicked();
 protected:
     void showEvent(QShowEvent *event) override;
 private:
@@ -22,6 +23,5 @@ private:
 
 private:
     Ui::App ui;
-    SessionManager* sessionManager;
     QVector<unsigned> scpSessions, cmdSessions;
 };

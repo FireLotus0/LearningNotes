@@ -1,5 +1,6 @@
 #include "scpsession.h"
 #include "utils/utils.h"
+#include "logger/logger.h"
 
 #include <libssh2.h>
 #include <cassert>
@@ -28,18 +29,18 @@ bool ScpSession::uploadFile(const std::string &remoteFile, const std::string &lo
     isTaskSucceed = false;
     auto fileData = Utils::readFile(localFile);
     if (fileData.empty()) {
-        std::cerr << __FILE__ << __LINE__ << " Scp Upload File Failed: Local File Is Empty Or Not Exist! LocalFile=" << localFile << std::endl;
+        LOG_ERROR("Scp Upload File Failed: Local File Is Empty Or Not Exist! LocalFile=", localFile);
         return isTaskSucceed;
     }
     assert(uploadChannel == nullptr);
     auto tm_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     uploadChannel = libssh2_scp_send64(session, remoteFile.c_str(), 0644, fileData.size(), tm_t, tm_t);
     if (!uploadChannel) {
-        std::cerr << __FILE__ << __LINE__ << " Scp Upload File Failed: Create Channel Failed: " << libssh2_session_last_error(session, NULL, NULL, 0) << std::endl;
+        LOG_ERROR("Scp Upload File Failed: Create Channel Failed:", libssh2_session_last_error(session, NULL, NULL, 0));
     } else {
         auto rt = libssh2_channel_write(uploadChannel, fileData.data(), fileData.size() < 0);
         if (rt < 0) {
-            std::cerr << __FILE__ << __LINE__ << " Scp Upload File Failed: Write Data Failed: " << libssh2_session_last_error(session, NULL, NULL, 0) << std::endl;
+            LOG_ERROR("Scp Upload File Failed: Write Data Failed:", libssh2_session_last_error(session, NULL, NULL, 0));
         }
         releaseChannel(true);
         isTaskSucceed = rt >= 0;
@@ -51,12 +52,12 @@ bool ScpSession::downloadFile(const std::string &remoteFile, const std::string &
     isTaskSucceed = false;
     std::fstream outFile(localFile, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
     if(!outFile.is_open()) {
-        std::cerr <<__FILE__ << __LINE__ << " Write File Failed：Open " << localFile << std::endl;
+        LOG_ERROR("Open File Failed", localFile);
         return isTaskSucceed;
     }
     downloadChannel = libssh2_scp_recv2(session, remoteFile.c_str(), NULL);
     if(!downloadChannel) {
-        std::cerr <<__FILE__ << __LINE__ << " Create Scp Channel Failed!" << std::endl;
+        LOG_ERROR("Create Scp Channel Failed!");
         outFile.close();
         return isTaskSucceed;
     }
@@ -104,4 +105,8 @@ void ScpSession::executeCallback(TaskType taskType) {
 
 SessionType ScpSession::sessionType() const {
     return SCP;
+}
+
+void ScpSession::addCreateTask() {
+
 }

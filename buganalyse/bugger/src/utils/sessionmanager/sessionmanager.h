@@ -10,7 +10,7 @@
 class SessionManager : public QObject {
 Q_OBJECT
 public:
-    explicit SessionManager(QObject *parent = nullptr);
+    static SessionManager* instance();
 
     QPair<QString, unsigned> createSession(SessionType sessionType, const QString &user, const QString &passwd, const QString &ip, const QString &sessionName = "", unsigned short sshPort = 22);
 
@@ -25,6 +25,15 @@ public:
     void sftpRemoveFile(unsigned int sessionId, const QString& remoteFile);
 
     void executeShellCmd(unsigned int sessionId, const QString& cmd);
+
+signals:
+    void sigScpUploadFinished(bool success, const QString &remoteFile, const QString &localFile);
+    void sigScpDownloadFinished(bool success, const QString &remoteFile, const QString &localFile);
+    void sigCommandFinished(bool success, const QString &output);
+    void sigRemoveSessionTask(unsigned int sessionId);
+    void sigSftpTransferFinished(bool success, const QString& remoteFile, const QString& localFile);
+    void sigSftpReadDirFinished(bool success, const QString& remoteDir, const QVector<SftpSession::FileInfo>& data);
+    void sigSftpRemoveFileFinished(bool success, const QString& remoteFile);
 
 public slots:
     void onScpUploadFinished(bool success, const QString &remoteFile, const QString &localFile);
@@ -41,5 +50,9 @@ public slots:
 
     void onSftpRemoveFileFinished(bool success, const QString& remoteFile);
 private:
+    explicit SessionManager(QObject *parent = nullptr);
+private:
     QMap<unsigned, Session *> sessions;
 };
+
+#define SMPTR (SessionManager::instance())

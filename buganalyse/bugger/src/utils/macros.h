@@ -11,7 +11,6 @@
 enum SessionType {
     MAKE_SESSION_TYPE(SESSION_ENUM)
 };
-/*-------------------------------*/
 
 #define SESSION_NAME(x) #x
 static std::string SessionName[] = {
@@ -63,4 +62,21 @@ enum SessionState {
 #define SESSION_STATE_NAME(x) #x
 static std::string SessionStateName[] = {
         MAKE_SESSION_STATE(SESSION_STATE_NAME)
+};
+
+/*------ Log Level Define ------*/
+#define MAKE_LOG_LEVEL(GEN) \
+    GEN(LEVEL_INFO), \
+    GEN(LEVEL_WARNING), \
+    GEN(LEVEL_ERROR),   \
+    GEN(LEVEL_FATAL),
+
+#define LOG_ENUM(x) x
+enum LogLevel{
+    MAKE_LOG_LEVEL(LOG_ENUM)
+};
+
+#define LOG_NAME(x) #x
+static std::string LOG_NAME[] = {
+        MAKE_LOG_LEVEL(LOG_NAME)
 };

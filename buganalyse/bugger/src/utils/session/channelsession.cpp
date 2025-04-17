@@ -1,13 +1,13 @@
-#include <cassert>
 #include "channelsession.h"
 #include "utils/task/taskexecutor.h"
+#include "logger/logger.h"
+#include <cassert>
 
 ChannelSession::ChannelSession(const std::string &user, const std::string &passwd, const std::string &ip, const std::string& sessionName, unsigned int id,  unsigned short sshPort)
     : Session(SessionType::SHELL, user, passwd, ip, sessionName, id, sshPort)
 {
     channel = nullptr;
     channelValid = false;
-    addTask(TaskType::CREATE_CHANNEL, this,  &ChannelSession::initChannel);
 }
 
 ChannelSession::~ChannelSession() {
@@ -23,11 +23,11 @@ bool ChannelSession::initChannel() {
     if(isSessionValid()) {
         channel = libssh2_channel_open_session(session);
         if (!channel) {
-            std::cerr << __FILE__ << ":" << __LINE__ << " Create Channel Failed!" << std::endl;
+            LOG_ERROR("Create Channel Failed!");
             return false;
         }
     } else {
-        std::cerr << __FILE__ << ":" << __LINE__ << " Init Channel Not Allowed: Session Is Invalid!" << std::endl;
+        LOG_ERROR("Init Channel Not Allowed: Session Is Invalid!");
         return false;
     }
     channelValid = true;
@@ -38,7 +38,7 @@ bool ChannelSession::runCommand(const std::string &command) {
     isTaskSucceed = false;
     if(channelValid) {
         if (libssh2_channel_exec(channel, command.c_str()) != 0) {
-            std::cerr << __FILE__ << ":" << __LINE__ << " Command Failed: CMD=" << command << " Err=" << libssh2_session_last_error(session, NULL, NULL, 0) << std::endl;
+            LOG_ERROR("Command Failed: command=", command, "ERROR:", libssh2_session_last_error(session, NULL, NULL, 0));
         } else {
             int bytes_read;
             char buffer[1024];
@@ -49,11 +49,11 @@ bool ChannelSession::runCommand(const std::string &command) {
                     buffer[bytes_read] = '\0'; // 确保字符串结束
                     resBuf << buffer;
                 } else if (bytes_read == 0) {
-                    std::cout << "Command Finish: " << resBuf.str() << std::endl;
+                    LOG_INFO("Command Finish:", resBuf.str());
                     isTaskSucceed = true;
                     break;
                 } else {
-                    std::cerr << __FILE__ << ":" << __LINE__ << " Command Failed: CMD=" << command << " Err=" << libssh2_session_last_error(session, NULL, NULL, 0) << std::endl;
+                    LOG_ERROR("Command Failed: command=", command, "ERROR:", libssh2_session_last_error(session, NULL, NULL, 0));
                     isTaskSucceed = false;
                     break;
                 }
@@ -80,4 +80,8 @@ void ChannelSession::executeCallback(TaskType taskType) {
 
 SessionType ChannelSession::sessionType() const {
     return SessionType::SHELL;
+}
+
+void ChannelSession::addCreateTask() {
+    addTask(TaskType::CREATE_CHANNEL, this,  &ChannelSession::initChannel);
 }

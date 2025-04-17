@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>377</width>
-    <height>322</height>
+    <width>388</width>
+    <height>378</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -239,7 +239,7 @@ QPushButton:pressed{
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_4">
+       <widget class="QLabel" name="label_error">
         <property name="styleSheet">
          <string notr="true">background:transparent;
 color:red;</string>
@@ -287,6 +287,155 @@ color:red;</string>
        </item>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="QWidget" name="widget_4" native="true">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>40</height>
+            </size>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_8" stretch="0,0">
+            <property name="spacing">
+             <number>12</number>
+            </property>
+            <item>
+             <widget class="QPushButton" name="pushButton_8">
+              <property name="minimumSize">
+               <size>
+                <width>32</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>32</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">border-image: url(:/res/res/type.png);</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBox">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>30</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">/* 未下拉时，QComboBox的样式 */
+QComboBox {
+	border: 1px solid #A0A0A0; /* 边框宽度为1px，颜色为#A0A0A0 */
+	border-radius: 3px; /* 边框圆角 */
+	padding-left: 5px; /* 文本距离左边界有5px */
+	background-color: #F2F2F2; /* 背景颜色 */
+	color: #A0A0A0; /* 文本颜色 */
+	font-family: &quot;Microsoft YaHei&quot;; /* 文本字体族 */
+	font-size: 10pt; /* 文本字体大小 */
+}
+ /* 下拉后，整个下拉窗体样式 */
+QComboBox QAbstractItemView {
+    outline: 0px solid gray;   /* 选定项的虚框 */
+    border: 1px solid  #F2F2F2;   /* 整个下拉窗体的边框 */
+    color:  #A0A0A0;
+    background-color:  #F2F2F2;   /* 整个下拉窗体的背景色 */
+    selection-background-color: lightgreen;   /* 整个下拉窗体被选中项的背景色 */
+}
+ 
+/* 下拉后，整个下拉窗体每项的样式 */
+QComboBox QAbstractItemView::item {
+    height: 50px;   /* 项的高度（设置pComboBox-&gt;setView(new QListView());后，该项才起作用） */
+}
+ 
+/* 下拉后，整个下拉窗体越过每项的样式 */
+QComboBox QAbstractItemView::item:hover {
+    color: #FFFFFF;
+    background-color: lightgreen;   /* 整个下拉窗体越过每项的背景色 */
+}
+ 
+/* 下拉后，整个下拉窗体被选择的每项的样式 */
+QComboBox QAbstractItemView::item:selected {
+    color: #FFFFFF;
+    background-color: lightgreen;
+}
+ 
+/* QComboBox中的垂直滚动条 */
+QComboBox QAbstractScrollArea QScrollBar:vertical {
+    width: 10px;
+    background-color: #d0d2d4;   /* 空白区域的背景色  灰色green */
+}
+ 
+QComboBox QAbstractScrollArea QScrollBar::handle:vertical {
+    border-radius: 5px;   /* 圆角 */
+    background: rgb(160,160,160);   /* 小方块的背景色深灰lightblue */
+}
+ 
+QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {
+    background: rgb(90, 91, 93);   /* 越过小方块的背景色yellow */
+}
+
+ 
+/* 点击QComboBox */
+QComboBox:on {
+}
+ 
+/* 下拉框样式 */
+QComboBox::drop-down {
+    subcontrol-origin: padding;   /* 子控件在父元素中的原点矩形。如果未指定此属性，则默认为padding。 */
+    subcontrol-position: top right;   /* 下拉框的位置（右上） */
+    width: 24px;   /* 下拉框的宽度 */
+ 
+    border-left-width: 1px;   /* 下拉框的左边界线宽度 */
+    border-left-color: darkgray;   /* 下拉框的左边界线颜色 */
+    border-left-style: solid;   /* 下拉框的左边界线为实线 */
+    border-top-right-radius: 3px;   /* 下拉框的右上边界线的圆角半径（应和整个QComboBox右上边界线的圆角半径一致） */
+    border-bottom-right-radius: 3px;   /* 同上 */
+}
+　/* 越过下拉框样式 */
+ 
+　QComboBox::drop-down:hover {
+ 
+　　　background: dark-gray;
+ 
+　}
+/* 下拉箭头样式 */
+ QComboBox::down-arrow {
+ width: 24px; /* 下拉箭头的宽度（建议与下拉框drop-down的宽度一致） */
+ background: transparent; /* 下拉箭头的的背景色 */
+ padding: 0px 0px 0px 0px; /* 上内边距、右内边距、下内边距、左内边距 */
+ image: url(:/res/res/down_arrow.png);
+}
+
+
+</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>SSH</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>SFTP</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>SCP</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
          <item>
           <widget class="QWidget" name="widget_3" native="true">
            <property name="maximumSize">
@@ -462,6 +611,12 @@ color:red;</string>
        </item>
        <item>
         <widget class="QPushButton" name="btn_cancel">
+         <property name="minimumSize">
+          <size>
+           <width>48</width>
+           <height>32</height>
+          </size>
+         </property>
          <property name="styleSheet">
           <string notr="true"/>
          </property>
@@ -485,6 +640,12 @@ color:red;</string>
        </item>
        <item>
         <widget class="QPushButton" name="btn_confirm">
+         <property name="minimumSize">
+          <size>
+           <width>48</width>
+           <height>32</height>
+          </size>
+         </property>
          <property name="text">
           <string>确认</string>
          </property>

@@ -16,6 +16,9 @@ public:
     void executeCallback(TaskType taskType) override;
 
     SessionType sessionType() const override;
+
+protected:
+    void addCreateTask() override;
 private:
     bool initChannel();
 

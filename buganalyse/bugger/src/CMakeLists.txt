@@ -19,6 +19,8 @@ set(SRC
     dialog/login/logindlg.h
     dialog/login/logindlg.cpp
 
+    logger/logger.h
+
     utils/sessionmanager/sessionmanager.h
     utils/sessionmanager/sessionmanager.cpp
 

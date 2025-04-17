@@ -2,6 +2,8 @@
 
 #include "utils/utils.h"
 #include "taskexecutor.h"
+#include "utils/macros.h"
+#include "logger/logger.h"
 
 #include <iostream>
 #include <sstream>
@@ -16,11 +18,10 @@ TaskExecutor::TaskExecutor() {
     // 初始化 Windows Sockets
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << Utils::curTime() << "WSAStartup failed" << std::endl;
-        return;
+        LOG_FATAL("WSAStartup Failed");
     }
     if (libssh2_init(0) != 0) {
-        std::cerr << Utils::curTime() << "WSAStartup failed" << std::endl;
+        LOG_FATAL("Ssh Library Init Failed");
     }
 }
 
@@ -34,7 +35,8 @@ TaskExecutor::~TaskExecutor() {
     WSACleanup();
 }
 
-void TaskExecutor::run(std::shared_future<void> future) {
+void TaskExecutor::run(std::shared_future<void> f) {
+    auto future = f;
     while (future.wait_for(std::chrono::milliseconds(TASK_CHECK_STOP_INTERVAL)) == std::future_status::timeout) {
         std::unique_lock<std::mutex> lk(taskMt);
         TaskEntityBase *taskPtr{nullptr};
@@ -51,8 +53,6 @@ void TaskExecutor::run(std::shared_future<void> future) {
                 } else if (sessionTask.second.first == curThrId) {
                     findTask = true;
                 }
-                std::cout << "TaskType:" << TASK_NAME[sessionTask.second.second.front()->taskType] << " TaskThrID=" << sessionTask.second.first
-                    << "   CurThrID=" << curThrId << std::endl;
                 if(findTask && !sessionTask.second.second.empty()) {
                     taskPtr = sessionTask.second.second.front();
                     sessionId = sessionTask.first;
@@ -70,7 +70,7 @@ void TaskExecutor::run(std::shared_future<void> future) {
             }
             lk.unlock();
             bool isSucceed = taskPtr->execute();
-            std::cout << taskPtr->taskResultStr(isSucceed) << std::endl;
+            LOG_INFO(taskPtr->taskResultStr(isSucceed));
             delete taskPtr;
         }
     }
