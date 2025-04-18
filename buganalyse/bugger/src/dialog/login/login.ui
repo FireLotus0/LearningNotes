@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>388</width>
-    <height>378</height>
+    <height>377</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -217,7 +217,7 @@ QPushButton:pressed{
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_5">
+       <widget class="QPushButton" name="icon_error">
         <property name="minimumSize">
          <size>
           <width>32</width>
@@ -288,7 +288,7 @@ color:red;</string>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
-          <widget class="QWidget" name="widget_4" native="true">
+          <widget class="QWidget" name="widget_type" native="true">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -478,6 +478,9 @@ QComboBox::drop-down {
                 <height>30</height>
                </size>
               </property>
+              <property name="text">
+               <string>192.168.1.159</string>
+              </property>
              </widget>
             </item>
            </layout>
@@ -525,6 +528,9 @@ QComboBox::drop-down {
                 <height>30</height>
                </size>
               </property>
+              <property name="text">
+               <string>root</string>
+              </property>
              </widget>
             </item>
            </layout>
@@ -571,6 +577,9 @@ QComboBox::drop-down {
                 <width>0</width>
                 <height>30</height>
                </size>
+              </property>
+              <property name="text">
+               <string>Xykj20160315</string>
               </property>
              </widget>
             </item>

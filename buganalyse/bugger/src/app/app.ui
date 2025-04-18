@@ -6,17 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1007</width>
-    <height>660</height>
+    <width>1128</width>
+    <height>760</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">
- 
-</string>
+   <string notr="true"/>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_4">
    <property name="spacing">
@@ -61,8 +59,7 @@ border-radius:8px;
        <widget class="QWidget" name="widget" native="true">
         <property name="styleSheet">
          <string notr="true">QWidget#widget{
-background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-stop:0 #d9ffd3, stop:0.5 #B0FBA5 ,stop:1 #7bb074);
+background-color:rgb(102, 178, 102);
 border-radius:0px;
 }</string>
         </property>
@@ -205,43 +202,182 @@ border-radius:0px;
 }</string>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
             <item>
-             <widget class="QToolButton" name="btn_new_connect">
+             <widget class="QWidget" name="widget_3" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>61</height>
+               </size>
+              </property>
               <property name="styleSheet">
-               <string notr="true">QToolButton:pressed{
-background-color:#FFE29F;
+               <string notr="true">QWidget{
+background:#defcf9;
 }</string>
               </property>
-              <property name="text">
-               <string>ssh</string>
-              </property>
-              <property name="icon">
-               <iconset resource="../app.qrc">
-                <normaloff>:/res/res/new_connection.png</normaloff>:/res/res/new_connection.png</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>32</width>
-                <height>32</height>
-               </size>
-              </property>
-              <property name="toolButtonStyle">
-               <enum>Qt::ToolButtonTextUnderIcon</enum>
-              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <item>
+                <widget class="QPushButton" name="btn_ssh">
+                 <property name="minimumSize">
+                  <size>
+                   <width>101</width>
+                   <height>41</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>101</width>
+                   <height>41</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton{
+background:transparent;
+image: url(:/res/res/ssh.png);
+width:101px;
+height:41px;
+border-radius:8px;
+border:none;
+}
+
+QPushButton:hover{
+background:#cadefc;
+}
+
+QPushButton:checked{
+background:#c3bef0;
+}
+</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="btn_sftp">
+                 <property name="minimumSize">
+                  <size>
+                   <width>101</width>
+                   <height>41</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>101</width>
+                   <height>41</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton{
+background:transparent;
+image: url(:/res/res/sftp.png);
+width:101px;
+height:41px;
+border-radius:8px;
+border:none;
+}
+
+QPushButton:hover{
+background:#cadefc;
+}
+
+QPushButton:checked{
+background:#c3bef0;
+}
+</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="btn_scp">
+                 <property name="minimumSize">
+                  <size>
+                   <width>101</width>
+                   <height>41</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>101</width>
+                   <height>41</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton{
+background:transparent;
+image: url(:/res/res/scp.png);
+width:101px;
+height:41px;
+border-radius:8px;
+border:none;
+}
+
+QPushButton:hover{
+background:#cadefc;
+}
+
+QPushButton:checked{
+background:#c3bef0;
+}
+</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>486</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
              </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_2">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>932</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
             </item>
            </layout>
           </widget>
@@ -253,12 +389,12 @@ background-color:#FFE29F;
        <widget class="QWidget" name="content" native="true">
         <property name="styleSheet">
          <string notr="true">QWidget#content{
-background-color:  #c2e9fb;
+background-color: rgb(255, 245, 224);
 border-top-left-radius:0px;
 border-top-right-radius:0px;
 }</string>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1">
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
          <property name="spacing">
           <number>0</number>
          </property>
@@ -306,15 +442,16 @@ border-radius:8px;
              <string notr="true">background:transparent;</string>
             </property>
            </widget>
-           <widget class="QStackedWidget" name="sessionContent">
-            <property name="styleSheet">
-             <string notr="true">background:transparent;</string>
-            </property>
-            <widget class="QWidget" name="page">
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-            </widget>
+           <widget class="QWidget" name="layoutWidget">
+            <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0">
+             <item>
+              <widget class="QStackedWidget" name="sessionContent">
+               <property name="styleSheet">
+                <string notr="true">background:transparent;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </widget>
          </item>

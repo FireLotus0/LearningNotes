@@ -3,26 +3,46 @@
 #include <qlistview.h>
 #include <qregexp.h>
 
-LoginDlg::LoginDlg(QWidget *parent) : WindowFramelessWidget(parent)
+LoginDlg::LoginDlg(int type, QWidget *parent)
+    : WindowFramelessWidget(parent)
+    , type(type)
 {
     ui.setupUi(this);
     setMoveAreaWidget(ui.title);
     setAttribute(Qt::WA_DeleteOnClose, false);
+    init();
 }
 
 void LoginDlg::init() {
     ui.comboBox->setView(new QListView);
     setErrorLabel(Error::NONE);
+    ui.comboBox->setItemData(0, (int)SessionType::SHELL);
+    ui.comboBox->setItemData(1, (int)SessionType::SFTP);
+    ui.comboBox->setItemData(2, (int)SessionType::SCP);
 
-    ui.comboBox->setItemData(0, SessionType::SHELL);
-    ui.comboBox->setItemData(1, SessionType::SFTP);
-    ui.comboBox->setItemData(2, SessionType::SCP);
+    connect(SMPTR, &SessionManager::sigSessionConnectFinished, this, &LoginDlg::onConnectFinished);
+    auto edit = findChildren<QLineEdit*>();
+    for(auto e : edit) {
+        connect(e, &QLineEdit::textEdited, this, [&](const QString&){ setErrorLabel(NONE); });
+    }
+    if(type != -1) {
+        if(type == SessionType::SHELL) {
+            ui.comboBox->setCurrentIndex(0);
+        } else if(type == SessionType::SFTP) {
+            ui.comboBox->setCurrentIndex(1);
+        } else if(type == SessionType::SCP) {
+            ui.comboBox->setCurrentIndex(2);
+        } else {
+            Q_ASSERT(false);
+        }
+        ui.widget_type->setVisible(false);
+    }
 }
 
 void LoginDlg::setErrorLabel(LoginDlg::Error error) {
     if(error == NONE) {
-        ui.widget_error->setVisible(false);
-        setFixedSize(388, 346);
+        ui.label_error->setVisible(false);
+        ui.icon_error->setVisible(false);
         return;
     } else if(error == IP_WRONG) {
         ui.label_error->setText("IP地址错误");
@@ -35,8 +55,8 @@ void LoginDlg::setErrorLabel(LoginDlg::Error error) {
     } else if(error == PASSWD_NONE) {
         ui.label_error->setText("登录密码不可为空");
     }
-    ui.widget_error->setVisible(true);
-    setFixedSize(388, 378);
+    ui.label_error->setVisible(true);
+    ui.icon_error->setVisible(true);
 }
 
 void LoginDlg::on_btn_cancel_clicked() {
@@ -47,7 +67,7 @@ void LoginDlg::on_btn_cancel_clicked() {
 }
 
 bool LoginDlg::validateInput() {
-    QRegExp ipRegExp("[1-255].[0-255].[0-255].[0-255]");
+    QRegExp ipRegExp(R"(^((2((5[0-5])|([0-4]\d)))|([0-1]?\d{1,2}))(\.((2((5[0-5])|([0-4]\d)))|([0-1]?\d{1,2}))){3}$)");
     ip = ui.edit_ip->text().trimmed();
     user = ui.edit_user->text().trimmed();
     passwd = ui.edit_passwd->text().trimmed();
@@ -71,7 +91,16 @@ bool LoginDlg::validateInput() {
 
 void LoginDlg::on_btn_confirm_clicked() {
     if(validateInput()) {
-//        SMPTR->createSession(ui.comboBox->currentData().value<SessionType>(), user, passwd, ip);
+        SMPTR->createSession((SessionType)ui.comboBox->currentData().toInt(), user, passwd, ip);
+    }
+}
+
+void LoginDlg::onConnectFinished(int type, bool success, unsigned int sessionId) {
+    if(success) {
+        emit sessionCreated(type, sessionId, user + "@" + ip);
+        close();
+    } else {
+        setErrorLabel(Error::AUTH_WRONG);
     }
 }
 

@@ -17,13 +17,13 @@ public:
 
     SessionType sessionType() const override;
 
-protected:
     void addCreateTask() override;
 private:
     bool initChannel();
 
     bool runCommand(const std::string& command);
 
+    void releaseChannel();
 private:
     LIBSSH2_CHANNEL* channel;
     bool channelValid;

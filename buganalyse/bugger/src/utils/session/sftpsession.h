@@ -25,7 +25,6 @@ public:
 
     SessionType sessionType() const override;
 
-protected:
     void addCreateTask() override;
 
 private:

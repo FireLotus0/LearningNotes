@@ -129,6 +129,12 @@ void SftpSession::executeCallback(TaskType taskType) {
         auto obj = iter->second.first;
         auto method = iter->second.second;
         switch(taskType) {
+            case TaskType::SFTP_CREATE:
+            {
+                method.invoke(obj, Qt::QueuedConnection, Q_ARG(int, type),
+                              Q_ARG(bool, sftpValid), Q_ARG(unsigned int, id));
+                break;
+            }
             case TaskType::SFTP_UPLOAD:
             case TaskType::SFTP_DOWNLOAD:
             {
@@ -147,12 +153,12 @@ void SftpSession::executeCallback(TaskType taskType) {
                 method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed), Q_ARG(QString, QString::fromStdString(rFile)));
                 break;
             }
-            default: assert(false);
         }
 
     }
 }
 
 void SftpSession::addCreateTask() {
-    addTask(TaskType::SFTP_CREATE, this, &SftpSession::initSftp);
+    Session::addCreateTask();
+    TASK_EXECUTOR.addTask(id, TaskType::SFTP_CREATE, &SftpSession::initSftp, this);
 }

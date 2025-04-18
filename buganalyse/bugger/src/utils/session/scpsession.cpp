@@ -98,8 +98,13 @@ void ScpSession::executeCallback(TaskType taskType) {
     auto iter = callbacks.find(taskType);
     if(iter != callbacks.end()) {
         auto obj = iter->second.first;
-        iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed), Q_ARG(QString, QString::fromStdString(rFile)),
-                                   Q_ARG(QString, QString::fromStdString(lFile)));
+        if(taskType == INIT_CONNECTION) {
+            iter->second.second.invoke(callbacks[taskType].first, Qt::QueuedConnection, Q_ARG(int, type),
+                                       Q_ARG(bool, (sessionState != SessionState::INVALID)), Q_ARG(unsigned int, id));
+        } else {
+            iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed),
+                                       Q_ARG(QString, QString::fromStdString(rFile)), Q_ARG(QString, QString::fromStdString(lFile)));
+        }
     }
 }
 
@@ -108,5 +113,5 @@ SessionType ScpSession::sessionType() const {
 }
 
 void ScpSession::addCreateTask() {
-
+    Session::addCreateTask();
 }

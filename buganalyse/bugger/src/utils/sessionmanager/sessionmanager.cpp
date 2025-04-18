@@ -47,8 +47,12 @@ SessionManager::createSession(SessionType sessionType, const QString &user, cons
         default:
             Q_ASSERT(false);
     }
+    session->registerCallback(TaskType::INIT_CONNECTION, this, "onSessionConnectFinished(int,bool,unsigned int)");
+    session->registerCallback(TaskType::SFTP_CREATE, this, "onSessionConnectFinished(int,bool,unsigned int)");
+    session->registerCallback(TaskType::CREATE_CHANNEL, this, "onSessionConnectFinished(int,bool,unsigned int)");
     session->registerCallback(TaskType::REMOVE_ALL_TASK, this, "onRemoveSessionTask(unsigned int)");
     sessions[sessionId] = session;
+    session->addCreateTask();
     return qMakePair(name, sessionId);
 }
 
@@ -106,4 +110,8 @@ void SessionManager::onSftpRemoveFileFinished(bool success, const QString &remot
 SessionManager* SessionManager::instance() {
     static auto* sessionManager = new SessionManager;
     return sessionManager;
+}
+
+void SessionManager::onSessionConnectFinished(int type, bool success, unsigned int sessionId) {
+    sigSessionConnectFinished(type, success, sessionId);
 }

@@ -15,7 +15,6 @@ public:
 
     SessionType sessionType() const override;
 
-protected:
     void addCreateTask() override;
 private:
     bool uploadFile(const std::string& remoteFile, const std::string& localFile);

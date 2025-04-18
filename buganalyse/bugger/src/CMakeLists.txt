@@ -41,6 +41,9 @@ set(SRC
     utils/session/scpsession.cpp
     utils/session/sftpsession.h
     utils/session/sftpsession.cpp
+
+    pages/commands/commandpage.h
+    pages/commands/commandpage.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SRC})

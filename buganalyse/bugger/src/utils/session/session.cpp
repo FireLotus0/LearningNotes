@@ -13,8 +13,7 @@ Session::Session(SessionType sessionType, const std::string &user, const std::st
 {
     sock = INVALID_SOCKET;
     sockConnValid = false;
-    sessionState = SessionState::IDLE;
-    TASK_EXECUTOR.addTask(id, TaskType::INIT_CONNECTION, &Session::initConnection, this);
+    sessionState = SessionState::INVALID;
 }
 
 Session::~Session() {
@@ -28,15 +27,14 @@ Session::~Session() {
 }
 
 bool Session::initConnection() {
-    sessionState = SessionState::RUNNING;
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
-        std::cerr << __FILE__ << ":" << __LINE__ << " Socket Create Failed!" << std::endl;
+        LOG_ERROR("Socket Create Failed!");
         return false;
     }
     session = libssh2_session_init();
     if(session == nullptr) {
-        std::cerr << __FILE__ << ":" << __LINE__ << " Session Create Failed!" << std::endl;
+        LOG_ERROR("Session Create Failed!");
         closesocket(sock);
         sock = INVALID_SOCKET;
         return false;
@@ -53,7 +51,7 @@ bool Session::connectToHost() {
     inet_pton(AF_INET, ip.c_str(), &sin.sin_addr);
     auto rt = ::connect(sock, (struct sockaddr *) (&sin), sizeof(sin));
     if (rt != 0) {
-        std::cerr << __FILE__ << ":" << __LINE__ << " Connect Server Failed: IP=" << ip << " PORT=" << port;
+        LOG_ERROR("Connect Server Failed: IP=", ip, " Port=", port);
         return false;
     }
     sockConnValid = true;
@@ -63,7 +61,7 @@ bool Session::connectToHost() {
 bool Session::handshake() {
     assert(sockConnValid);
     if(libssh2_session_handshake(session, sock) != 0) {
-        std::cerr << __FILE__ << ":" << __LINE__ << " SSH Handshake Failed!" << std::endl;
+        LOG_ERROR("SSH Handshake Failed!");
         return false;
     }
     return authPasswd();
@@ -71,7 +69,7 @@ bool Session::handshake() {
 
 bool Session::authPasswd() {
     if(libssh2_userauth_password(session, user.c_str(), passwd.c_str()) != 0) {
-        std::cerr << __FILE__ << ":" << __LINE__ << " Auth Passwd Failed: User=" << user << " Passwd=" << passwd << std::endl;
+        LOG_ERROR("Auth Passwd Failed: User=", user, "Password=", passwd);
         return false;
     }
     sessionState = SessionState::IDLE;
@@ -100,4 +98,19 @@ bool Session::isTaskTypeRemove(TaskType taskType) {
         return true;
     }
     return false;
+}
+
+void Session::addCreateTask() {
+    TASK_EXECUTOR.addTask(id, TaskType::INIT_CONNECTION, &Session::initConnection, this);
+}
+
+std::string Session::getUserIp() const {
+    return user + "@" + "ip";
+}
+
+std::string Session::getLastError() {
+    char *error_msg;
+    int error_msg_len;
+    libssh2_session_last_error(session, &error_msg, &error_msg_len, 0);
+    return std::string(error_msg, error_msg_len);
 }

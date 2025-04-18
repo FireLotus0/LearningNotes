@@ -15,7 +15,9 @@ public:
 private slots:
     void on_btn_quit_clicked();
 
-    void on_btn_new_connect_clicked();
+    void on_btn_ssh_clicked();
+
+    void onNewConnCreated(int type, unsigned int id, const QString& sessionName);
 protected:
     void showEvent(QShowEvent *event) override;
 private:

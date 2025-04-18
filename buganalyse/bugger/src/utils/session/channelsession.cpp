@@ -11,12 +11,7 @@ ChannelSession::ChannelSession(const std::string &user, const std::string &passw
 }
 
 ChannelSession::~ChannelSession() {
-    if(channelValid) {
-        libssh2_channel_send_eof(channel);
-        libssh2_channel_wait_eof(channel);
-        libssh2_channel_close(channel);
-        libssh2_channel_free(channel);
-    }
+    releaseChannel();
 }
 
 bool ChannelSession::initChannel() {
@@ -37,8 +32,8 @@ bool ChannelSession::initChannel() {
 bool ChannelSession::runCommand(const std::string &command) {
     isTaskSucceed = false;
     if(channelValid) {
-        if (libssh2_channel_exec(channel, command.c_str()) != 0) {
-            LOG_ERROR("Command Failed: command=", command, "ERROR:", libssh2_session_last_error(session, NULL, NULL, 0));
+        if (libssh2_channel_exec(channel, command.c_str()) < 0) {
+            LOG_ERROR(std::string("Command Failed: command=") + command, "ERROR:", getLastError());
         } else {
             int bytes_read;
             char buffer[1024];
@@ -53,17 +48,21 @@ bool ChannelSession::runCommand(const std::string &command) {
                     isTaskSucceed = true;
                     break;
                 } else {
-                    LOG_ERROR("Command Failed: command=", command, "ERROR:", libssh2_session_last_error(session, NULL, NULL, 0));
+                    LOG_ERROR(std::string("Command Failed: command=") + command, "ERROR:", getLastError());
                     isTaskSucceed = false;
                     break;
                 }
             }
         }
     }
+    releaseChannel();
     return isTaskSucceed;
 }
 
 void ChannelSession::addCmdTask(const std::string &cmd) {
+    if(!channelValid) {
+        addTask(TaskType::CREATE_CHANNEL, this, &ChannelSession::initChannel);
+    }
     addTask(TaskType::RUN_CMD, this, &ChannelSession::runCommand, cmd);
 }
 
@@ -74,7 +73,12 @@ void ChannelSession::executeCallback(TaskType taskType) {
     auto iter = callbacks.find(taskType);
     if(iter != callbacks.end()) {
         auto obj = iter->second.first;
-        iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool , isTaskSucceed), Q_ARG(QString, QString::fromStdString(resBuf.str())));
+        if(taskType == CREATE_CHANNEL) {
+            iter->second.second.invoke(callbacks[taskType].first, Qt::QueuedConnection, Q_ARG(int, type),Q_ARG(bool, (sessionState != SessionState::INVALID)),
+                                       Q_ARG(unsigned int, id));
+        } else {
+            iter->second.second.invoke(obj, Qt::QueuedConnection,Q_ARG(bool , isTaskSucceed), Q_ARG(QString, QString::fromStdString(resBuf.str())));
+        }
     }
 }
 
@@ -83,5 +87,16 @@ SessionType ChannelSession::sessionType() const {
 }
 
 void ChannelSession::addCreateTask() {
-    addTask(TaskType::CREATE_CHANNEL, this,  &ChannelSession::initChannel);
+    Session::addCreateTask();
+    TASK_EXECUTOR.addTask(id, TaskType::CREATE_CHANNEL, &ChannelSession::initChannel, this);
+}
+
+void ChannelSession::releaseChannel() {
+    if(channelValid) {
+        libssh2_channel_send_eof(channel);
+        libssh2_channel_wait_eof(channel);
+        libssh2_channel_close(channel);
+        libssh2_channel_free(channel);
+        channelValid = false;
+    }
 }

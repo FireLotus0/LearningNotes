@@ -26,6 +26,14 @@ public:
 
     void executeShellCmd(unsigned int sessionId, const QString& cmd);
 
+    template<typename T>
+    T* getSession(unsigned int sessionId) {
+        if(sessions.contains(sessionId)) {
+            return dynamic_cast<T*>(sessions[sessionId]);
+        }
+        return nullptr;
+    }
+
 signals:
     void sigScpUploadFinished(bool success, const QString &remoteFile, const QString &localFile);
     void sigScpDownloadFinished(bool success, const QString &remoteFile, const QString &localFile);
@@ -34,6 +42,7 @@ signals:
     void sigSftpTransferFinished(bool success, const QString& remoteFile, const QString& localFile);
     void sigSftpReadDirFinished(bool success, const QString& remoteDir, const QVector<SftpSession::FileInfo>& data);
     void sigSftpRemoveFileFinished(bool success, const QString& remoteFile);
+    void sigSessionConnectFinished(int type, bool success, unsigned int sessionId);
 
 public slots:
     void onScpUploadFinished(bool success, const QString &remoteFile, const QString &localFile);
@@ -49,6 +58,8 @@ public slots:
     void onSftpReadDirFinished(bool success, const QString& remoteDir, const QVector<SftpSession::FileInfo>& data);
 
     void onSftpRemoveFileFinished(bool success, const QString& remoteFile);
+
+    void onSessionConnectFinished(int type, bool success, unsigned int sessionId);
 private:
     explicit SessionManager(QObject *parent = nullptr);
 private:

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <qmetaobject.h>
 #include "utils/macros.h"
+#include "logger/logger.h"
 
 class TaskExecutor;
 
@@ -26,16 +27,19 @@ public:
     template<typename Caller, typename Func, typename...Args>
     void addTask(TaskType taskType, Caller* caller, Func&& func, Args...args) {
         if(sessionState == SessionState::INVALID) {
-            std::cerr <<__FILE__ << ":" << __LINE__ << "Add Task Failed: Session State Is Invalid" << std::endl;
+            LOG_ERROR("Add Task Failed: Session State Is Invalid IP:", ip, "Session Name:", sessionName);
             return;
         }
         TASK_EXECUTOR.addTask(id, taskType, std::forward<Func>(func), std::move(caller), std::forward<Args>(args)...);
     }
 
+    std::string getUserIp() const;
+
     virtual void executeCallback(TaskType taskType) = 0;
 
     virtual SessionType sessionType() const = 0;
 
+    virtual void addCreateTask();
 protected:
     bool initConnection();
 
@@ -49,7 +53,7 @@ protected:
 
     bool isTaskTypeRemove(TaskType taskType);
 
-    virtual void addCreateTask() = 0;
+    std::string getLastError();
 protected:
     SOCKET sock;
     std::string ip;

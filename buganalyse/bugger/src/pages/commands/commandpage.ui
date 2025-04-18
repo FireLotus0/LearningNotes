@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CommandPage</class>
+ <widget class="QWidget" name="CommandPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>828</width>
+    <height>598</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QTextEdit" name="textEdit">
+     <property name="styleSheet">
+      <string notr="true">QTextEdit {
+    background-color: black;     /* 控制台背景为黑色 */
+    color: white;                /* 字体颜色为白色 */
+    font-family: &quot;Courier New&quot;;  /* 等宽字体 */
+    font-size: 12pt;             /* 字体大小 */
+    padding: 10px;               /* 内边距 */
+    border: 1px solid #333333;   /* 边框样式 */
+    border-radius: 0px;          /* 边框圆角 */
+}</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../app.qrc"/>
+ </resources>
+ <connections/>
+</ui>

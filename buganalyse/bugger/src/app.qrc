@@ -20,5 +20,8 @@
         <file>res/ip.png</file>
         <file>res/type.png</file>
         <file>res/down_arrow.png</file>
+        <file>res/ssh.png</file>
+        <file>res/scp.png</file>
+        <file>res/sftp.png</file>
     </qresource>
 </RCC>
