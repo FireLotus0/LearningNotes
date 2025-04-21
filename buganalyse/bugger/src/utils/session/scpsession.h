@@ -11,7 +11,7 @@ public:
 
     void addScpTask(const std::string& remoteFile, const std::string& localFile, bool isUpload);
 
-    void executeCallback(TaskType taskType) override;
+    void executeCallback(TaskType taskType, unsigned long taskId, bool succeed) override;
 
     SessionType sessionType() const override;
 

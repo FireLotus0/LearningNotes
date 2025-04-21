@@ -30,7 +30,7 @@ bool ChannelSession::initChannel() {
 }
 
 bool ChannelSession::runCommand(const std::string &command) {
-    isTaskSucceed = false;
+    bool succeed = false;
     if(channelValid) {
         if (libssh2_channel_exec(channel, command.c_str()) < 0) {
             LOG_ERROR(std::string("Command Failed: command=") + command, "ERROR:", getLastError());
@@ -45,18 +45,17 @@ bool ChannelSession::runCommand(const std::string &command) {
                     resBuf << buffer;
                 } else if (bytes_read == 0) {
                     LOG_INFO("Command Finish:", resBuf.str());
-                    isTaskSucceed = true;
+                    succeed = true;
                     break;
                 } else {
                     LOG_ERROR(std::string("Command Failed: command=") + command, "ERROR:", getLastError());
-                    isTaskSucceed = false;
                     break;
                 }
             }
         }
     }
     releaseChannel();
-    return isTaskSucceed;
+    return succeed;
 }
 
 void ChannelSession::addCmdTask(const std::string &cmd) {
@@ -66,7 +65,7 @@ void ChannelSession::addCmdTask(const std::string &cmd) {
     addTask(TaskType::RUN_CMD, this, &ChannelSession::runCommand, cmd);
 }
 
-void ChannelSession::executeCallback(TaskType taskType) {
+void ChannelSession::executeCallback(TaskType taskType, unsigned long taskId, bool succeed) {
     if(isTaskTypeRemove(taskType)) {
         return;
     }
@@ -77,7 +76,7 @@ void ChannelSession::executeCallback(TaskType taskType) {
             iter->second.second.invoke(callbacks[taskType].first, Qt::QueuedConnection, Q_ARG(int, type),Q_ARG(bool, (sessionState != SessionState::INVALID)),
                                        Q_ARG(unsigned int, id));
         } else {
-            iter->second.second.invoke(obj, Qt::QueuedConnection,Q_ARG(bool , isTaskSucceed), Q_ARG(QString, QString::fromStdString(resBuf.str())));
+            iter->second.second.invoke(obj, Qt::QueuedConnection,Q_ARG(bool , succeed), Q_ARG(QString, QString::fromStdString(resBuf.str())));
         }
     }
 }

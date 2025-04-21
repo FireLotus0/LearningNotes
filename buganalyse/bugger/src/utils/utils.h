@@ -10,6 +10,8 @@ std::string curTime();
 
 std::vector<char> readFile(const std::string &filePath);
 
+unsigned long curTimeStamp();
+
 template<typename T>
 class SingleInstance {
 public:

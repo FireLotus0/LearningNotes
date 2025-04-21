@@ -7,6 +7,8 @@
 #include <qobject.h>
 #include <qmap.h>
 
+Q_DECLARE_METATYPE(SftpSession::FileInfo)
+
 class SessionManager : public QObject {
 Q_OBJECT
 public:
@@ -39,7 +41,7 @@ signals:
     void sigScpDownloadFinished(bool success, const QString &remoteFile, const QString &localFile);
     void sigCommandFinished(bool success, const QString &output);
     void sigRemoveSessionTask(unsigned int sessionId);
-    void sigSftpTransferFinished(bool success, const QString& remoteFile, const QString& localFile);
+    void sigSftpTransferFinished(bool success, const QString& remoteFile, const QString& localFile, bool isUpload);
     void sigSftpReadDirFinished(bool success, const QString& remoteDir, const QVector<SftpSession::FileInfo>& data);
     void sigSftpRemoveFileFinished(bool success, const QString& remoteFile);
     void sigSessionConnectFinished(int type, bool success, unsigned int sessionId);
@@ -53,7 +55,7 @@ public slots:
 
     void onRemoveSessionTask(unsigned int sessionId);
 
-    void onSftpTransferFinished(bool success, const QString& remoteFile, const QString& localFile);
+    void onSftpTransferFinished(bool success, const QString& remoteFile, const QString& localFile, bool isUpload);
 
     void onSftpReadDirFinished(bool success, const QString& remoteDir, const QVector<SftpSession::FileInfo>& data);
 

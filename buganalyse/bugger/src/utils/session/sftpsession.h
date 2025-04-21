@@ -8,6 +8,7 @@ class SftpSession : public Session
 {
 public:
     struct FileInfo{
+        FileInfo() = default;
         FileInfo(const std::string& name, const std::string& entry, const LIBSSH2_SFTP_ATTRIBUTES& attr);
         std::string fileName, longEntry;
         LIBSSH2_SFTP_ATTRIBUTES attributes;
@@ -21,7 +22,7 @@ public:
 
     void addSftpTask(TaskType taskType, const std::string& arg);
 
-    void executeCallback(TaskType taskType) override;
+    void executeCallback(TaskType taskType, unsigned long taskId, bool succeed) override;
 
     SessionType sessionType() const override;
 
@@ -41,5 +42,5 @@ private:
     LIBSSH2_SFTP *sftp{nullptr};
     bool sftpValid = false;
     std::vector<FileInfo> dirInfo;
-    std::string lFile, rFile;
+    std::unordered_map<unsigned long, std::pair<std::string, std::string>> taskInfo;
 };

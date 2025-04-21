@@ -31,5 +31,8 @@ std::vector<char> readFile(const std::string& filePath) {
     return result;
 }
 
+unsigned long curTimeStamp() {
+    return std::chrono::system_clock::now().time_since_epoch().count();
+}
 
 }

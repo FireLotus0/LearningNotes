@@ -26,11 +26,10 @@ void ScpSession::addScpTask(const std::string &remoteFile, const std::string &lo
 }
 
 bool ScpSession::uploadFile(const std::string &remoteFile, const std::string &localFile) {
-    isTaskSucceed = false;
     auto fileData = Utils::readFile(localFile);
     if (fileData.empty()) {
         LOG_ERROR("Scp Upload File Failed: Local File Is Empty Or Not Exist! LocalFile=", localFile);
-        return isTaskSucceed;
+        return false;
     }
     assert(uploadChannel == nullptr);
     auto tm_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -43,23 +42,22 @@ bool ScpSession::uploadFile(const std::string &remoteFile, const std::string &lo
             LOG_ERROR("Scp Upload File Failed: Write Data Failed:", libssh2_session_last_error(session, NULL, NULL, 0));
         }
         releaseChannel(true);
-        isTaskSucceed = rt >= 0;
+        return rt >= 0;
     }
-    return isTaskSucceed;
+    return false;
 }
 
 bool ScpSession::downloadFile(const std::string &remoteFile, const std::string &localFile) {
-    isTaskSucceed = false;
     std::fstream outFile(localFile, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
     if(!outFile.is_open()) {
         LOG_ERROR("Open File Failed", localFile);
-        return isTaskSucceed;
+        return false;
     }
     downloadChannel = libssh2_scp_recv2(session, remoteFile.c_str(), NULL);
     if(!downloadChannel) {
         LOG_ERROR("Create Scp Channel Failed!");
         outFile.close();
-        return isTaskSucceed;
+        return false;
     }
 
     char buffer[4096];
@@ -69,8 +67,7 @@ bool ScpSession::downloadFile(const std::string &remoteFile, const std::string &
     }
     outFile.close();
     releaseChannel(false);
-    isTaskSucceed = true;
-    return isTaskSucceed;
+    return true;
 }
 
 void ScpSession::releaseChannel(bool isUpload) {
@@ -91,7 +88,7 @@ void ScpSession::releaseChannel(bool isUpload) {
     }
 }
 
-void ScpSession::executeCallback(TaskType taskType) {
+void ScpSession::executeCallback(TaskType taskType, unsigned long taskId, bool succeed) {
     if(isTaskTypeRemove(taskType)) {
         return;
     }
@@ -102,7 +99,7 @@ void ScpSession::executeCallback(TaskType taskType) {
             iter->second.second.invoke(callbacks[taskType].first, Qt::QueuedConnection, Q_ARG(int, type),
                                        Q_ARG(bool, (sessionState != SessionState::INVALID)), Q_ARG(unsigned int, id));
         } else {
-            iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed),
+            iter->second.second.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, succeed),
                                        Q_ARG(QString, QString::fromStdString(rFile)), Q_ARG(QString, QString::fromStdString(lFile)));
         }
     }

@@ -11,7 +11,6 @@
 #include <string>
 #include <iostream>
 #include <qobject.h>
-#include <qdebug.h>
 
 #define TASK_CHECK_STOP_INTERVAL 10
 
@@ -20,15 +19,17 @@ public:
     static TaskExecutor &getInstance();
 
     template<typename Func, typename...Args>
-    void addTask(unsigned int sessionId, TaskType taskType, Func &&func, Args &&...args) {
+    unsigned long addTask(unsigned int sessionId, TaskType taskType, Func &&func, Args &&...args) {
         std::lock_guard<std::mutex> lk(taskMt);
         auto iter = sessionTasks.find(sessionId);
         if(iter == sessionTasks.end()) {
             sessionTasks[sessionId] = std::make_pair(INT64_MAX, std::queue<TaskEntityBase*>{});
         }
-        auto task = new TaskEntity(taskType, std::forward<Func>(func), std::forward<Args>(args)...);
+        auto taskId = Utils::curTimeStamp();
+        auto task = new TaskEntity(taskId, taskType, std::forward<Func>(func), std::forward<Args>(args)...);
         sessionTasks[sessionId].second.push(task);
         cv.notify_one();
+        return taskId;
     }
 
     void removeTask(unsigned int id);
