@@ -1,0 +1,5 @@
+ToolSet: 17.0 (local)@E:\devtools\vside
+Ninja: 1.12.0@E:\devtools\clion\CLion202424\bin\ninja\win\x64\ninja.exe
+Options: 
+
+Options:-DCMAKE_MAKE_PROGRAM=E:/devtools/clion/CLion202424/bin/ninja/win/x64/ninja.exe

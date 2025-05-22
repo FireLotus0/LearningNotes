@@ -41,7 +41,7 @@
         - ARCHIVE:
             - windows上动态库的导入库：.lib
             - 静态库: .lib .a
-        - 如果Targetsw是库，则可以指定选项:
+        - 如果Targets是库，则可以指定选项:
             - NAMELINK_ONLY
             - NAMELINK_SKIP
             - 未指定，则默认都安装

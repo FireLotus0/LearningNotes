@@ -1,0 +1,14 @@
+E:\devtools\clion\CLion202424\bin\cmake\win\x64\bin\cmake.exe -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=E:/devtools/clion/CLion202424/bin/ninja/win/x64/ninja.exe -G Ninja -S D:\projects\LearningNotes\cmake\GenLibTest -B D:\projects\LearningNotes\cmake\GenLibTest\cmake-build-debug
+CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.5 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value or use a ...<max> suffix to tell
+  CMake that the project does not need compatibility with older versions.
+
+
+CMake Error at CMakeLists.txt:30 (install):
+  install does not recognize sub-command FILE
+
+
+-- Configuring incomplete, errors occurred!

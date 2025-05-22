@@ -65,7 +65,7 @@ endif()
 				- /OPT:REF：移除未使用的函数和数据，优化生成的可执行文件大小。
 				- /OPT:ICF：合并相同的函数和数据，进一步优化大小。
 	- 在 Release 模式下默认不生成调试信息，但有时需要为优化后的代码进行调试（如定位性能问题或确认 Release 的行为），这段代码可以启用调试符号，同时保持 Release 的优化特性。
-	- 优化写法：
+	- 优化写法：  
 	```cmake
 		if (WIN32)
     			target_compile_options(my_target PRIVATE 
