@@ -35,6 +35,8 @@ struct TaskEntityBase {
     virtual Session* getSessionPtr() = 0;
 
     TaskType taskType;
+
+    unsigned long taskId{};
 };
 
 template<typename Func, typename...Args>
@@ -42,9 +44,10 @@ struct TaskEntity : public TaskEntityBase {
     TaskEntity(const volatile TaskEntity<Func, Args...>&) = delete;
     ~TaskEntity() override= default;
 
-    explicit TaskEntity(TaskType taskType, Func&& f, Args&&...args) : TaskEntityBase(taskType){
+    explicit TaskEntity(unsigned long id, TaskType taskType, Func&& f, Args&&...args) : TaskEntityBase(taskType){
         func = std::move(f);
         params = std::forward_as_tuple(std::forward<Args>(args)...);
+        taskId = id;
     }
 
     bool execute() override {
@@ -52,16 +55,16 @@ struct TaskEntity : public TaskEntityBase {
         if constexpr (std::is_member_function_pointer_v<Func>) {
             succeed = this->isSucceed(std::apply(func, params));
         }
-        std::get<0>(params)->executeCallback(taskType);
+        std::get<0>(params)->executeCallback(taskType, taskId, succeed);
         return succeed;
     }
 
     Session * getSessionPtr() override {
-        if constexpr (std::is_invocable_v<Func>) {
+//        if constexpr (std::is_invocable_v<Func>) {
             return (Session *)std::get<0>(params);
-        } else {
-            return nullptr;
-        }
+//        } else {
+//            return nullptr;
+//        }
     }
 
 private:

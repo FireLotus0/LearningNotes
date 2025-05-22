@@ -38,8 +38,8 @@ SessionManager::createSession(SessionType sessionType, const QString &user, cons
         case SessionType::SFTP: {
             session = new SftpSession(user.toStdString(), passwd.toStdString(), ip.toStdString(), name.toStdString(),
                                      sessionId, sshPort);
-            session->registerCallback(TaskType::SFTP_UPLOAD, this, "onSftpTransferFinished(bool,QString,QString)");
-            session->registerCallback(TaskType::SFTP_DOWNLOAD, this, "onSftpTransferFinished(bool,QString,QString)");
+            session->registerCallback(TaskType::SFTP_UPLOAD, this, "onSftpTransferFinished(bool,QString,QString,bool)");
+            session->registerCallback(TaskType::SFTP_DOWNLOAD, this, "onSftpTransferFinished(bool,QString,QString,bool)");
             session->registerCallback(TaskType::SFTP_READ_DIR, this, "onSftpReadDirFinished(bool,QString,QVector<SftpSession::FileInfo>)");
             session->registerCallback(TaskType::SFTP_REMOVE_FILE, this, "onSftpRemoveFileFinished(bool,QString)");
             break;
@@ -83,20 +83,18 @@ void SessionManager::onCommandFinished(bool success, const QString &output) {
 void SessionManager::scpTransfer(unsigned int sessionId, const QString &localFile, const QString &remoteFile,
                                  bool isUpload) {
     Q_ASSERT(sessions[sessionId]);
-    qDebug() << QString::fromStdString(SessionName[sessions[sessionId]->sessionType()]);
     auto session = dynamic_cast<ScpSession *>(sessions[sessionId]);
     session->addScpTask(remoteFile.toStdString(), localFile.toStdString(), isUpload);
 }
 
 void SessionManager::executeShellCmd(unsigned int sessionId, const QString &cmd) {
     Q_ASSERT(sessions[sessionId]);
-    qDebug() << QString::fromStdString(SessionName[sessions[sessionId]->sessionType()]);
     auto session = dynamic_cast<ChannelSession *>(sessions[sessionId]);
     session->addCmdTask(cmd.toStdString());
 }
 
-void SessionManager::onSftpTransferFinished(bool success, const QString &remoteFile, const QString &localFile) {
-    sigSftpTransferFinished(success, remoteFile, localFile);
+void SessionManager::onSftpTransferFinished(bool success, const QString &remoteFile, const QString &localFile, bool isUpload) {
+    sigSftpTransferFinished(success, remoteFile, localFile, isUpload);
 }
 
 void SessionManager::onSftpReadDirFinished(bool success, const QString &remoteDir, const QVector<SftpSession::FileInfo> &data) {
@@ -114,4 +112,14 @@ SessionManager* SessionManager::instance() {
 
 void SessionManager::onSessionConnectFinished(int type, bool success, unsigned int sessionId) {
     sigSessionConnectFinished(type, success, sessionId);
+}
+
+void SessionManager::sftpReadDirInfo(unsigned int sessionId, const QString &dirName) {
+    auto session = dynamic_cast<SftpSession *>(sessions[sessionId]);
+    session->addSftpTask(TaskType::SFTP_READ_DIR, dirName.toStdString());
+}
+
+void SessionManager::sftpTransfer(unsigned int sessionId, const QString &localFile, const QString &remoteFile, bool isUpload) {
+    auto session = dynamic_cast<SftpSession *>(sessions[sessionId]);
+    session->addSftpTask(localFile.toStdString(), remoteFile.toStdString(), isUpload);
 }

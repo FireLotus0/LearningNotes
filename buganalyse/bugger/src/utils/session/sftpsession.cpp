@@ -28,7 +28,7 @@ SessionType SftpSession::sessionType() const {
 bool SftpSession::initSftp() {
     sftp = libssh2_sftp_init(session);
     if (sftp == nullptr) {
-        assert(false);
+        sftpValid = false;
         return false;
     }
     sftpValid = true;
@@ -36,10 +36,9 @@ bool SftpSession::initSftp() {
 }
 
 void SftpSession::addSftpTask(const std::string &localFile, const std::string &remoteFile, bool isUpload) {
-    addTask(isUpload ? TaskType::SFTP_UPLOAD : TaskType::SFTP_DOWNLOAD, this, isUpload ? &SftpSession::sftpUploadFile :
+    auto taskId = addTask(isUpload ? TaskType::SFTP_UPLOAD : TaskType::SFTP_DOWNLOAD, this, isUpload ? &SftpSession::sftpUploadFile :
     &SftpSession::sftpDownloadFile, localFile, remoteFile);
-    lFile = localFile;
-    rFile = remoteFile;
+    taskInfo.insert({taskId, std::make_pair(localFile, remoteFile)});
 }
 
 bool SftpSession::sftpUploadFile(const std::string &localFile, const std::string &remoteFile) {
@@ -70,6 +69,7 @@ bool SftpSession::sftpDownloadFile(const std::string &localFile, const std::stri
 
     LIBSSH2_SFTP_HANDLE *sftp_handle = libssh2_sftp_open(sftp, remoteFile.c_str(), LIBSSH2_FXF_READ, 0);
     if (!sftp_handle) {
+        LOG_INFO("Open SFTP Handle FAiled:", getLastError(), "Remote File:", remoteFile.c_str());
         return false;
     }
 
@@ -91,6 +91,7 @@ bool SftpSession::removeFile(const std::string &remoteFile) {
 bool SftpSession::readDir(const std::string &remoteDir) {
     LIBSSH2_SFTP_HANDLE *sftp_handle = libssh2_sftp_opendir(sftp, remoteDir.c_str());
     if (!sftp_handle) {
+        LOG_ERROR(std::string("Open Remote File Failed: remote dir:") + remoteDir, "ERROR:", getLastError());
         return false;
     }
     dirInfo.clear();
@@ -99,7 +100,12 @@ bool SftpSession::readDir(const std::string &remoteDir) {
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     int res;
     while ((res = libssh2_sftp_readdir_ex(sftp_handle, filename, sizeof(filename), longentry, sizeof(longentry), &attrs)) > 0) {
-        dirInfo.emplace_back(filename , longentry, attrs);
+        FileInfo tmp(filename , longentry, attrs);
+        if(tmp.fileName == "." || tmp.fileName == "..") {
+            continue;
+        }
+//        LOG_INFO("FileName:", tmp.fileName, "Entry:", tmp.longEntry);
+        dirInfo.emplace_back(std::move(tmp));
     }
     // 关闭句柄
     libssh2_sftp_closedir(sftp_handle);
@@ -107,54 +113,61 @@ bool SftpSession::readDir(const std::string &remoteDir) {
 }
 
 void SftpSession::addSftpTask(TaskType taskType, const std::string &remotePath) {
-    rFile = remotePath;
+    unsigned long taskId{};
     switch(taskType) {
         case TaskType::SFTP_REMOVE_FILE:
-            addTask(taskType, this, &SftpSession::removeFile, remotePath);
+            taskId = addTask(taskType, this, &SftpSession::removeFile, remotePath);
             break;
         case TaskType::SFTP_READ_DIR:
-            addTask(taskType, this, &SftpSession::readDir, remotePath);
+            taskId = addTask(taskType, this, &SftpSession::readDir, remotePath);
             break;
         default:
             assert(false);
     }
+    taskInfo.insert({taskId, std::make_pair("", remotePath)});
 }
 
-void SftpSession::executeCallback(TaskType taskType) {
+void SftpSession::executeCallback(TaskType taskType, unsigned long taskId, bool succeed) {
     if(isTaskTypeRemove(taskType)) {
         return;
     }
     auto iter = callbacks.find(taskType);
+    auto infoIter = taskInfo.find(taskId);
+    std::pair<std::string, std::string> info;
+    if(infoIter != taskInfo.end()) {
+        info = infoIter->second;
+        taskInfo.erase(taskId);
+    }
     if(iter != callbacks.end()) {
         auto obj = iter->second.first;
         auto method = iter->second.second;
         switch(taskType) {
-            case TaskType::SFTP_CREATE:
-            {
+            case TaskType::SFTP_CREATE: {
                 method.invoke(obj, Qt::QueuedConnection, Q_ARG(int, type),
                               Q_ARG(bool, sftpValid), Q_ARG(unsigned int, id));
                 break;
             }
-            case TaskType::SFTP_UPLOAD:
-            case TaskType::SFTP_DOWNLOAD:
-            {
-                method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed),
-                              Q_ARG(QString, QString::fromStdString(rFile)), Q_ARG(QString, QString::fromStdString(lFile)));
+            case TaskType::SFTP_UPLOAD: {
+                method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, succeed),
+                              Q_ARG(QString, QString::fromStdString(info.second)), Q_ARG(QString, QString::fromStdString(info.first)), Q_ARG(bool, true));
                 break;
             }
-            case TaskType::SFTP_READ_DIR:
-            {
-                method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed), Q_ARG(QString, QString::fromStdString(rFile)),
+            case TaskType::SFTP_DOWNLOAD: {
+                method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, succeed),
+                              Q_ARG(QString, QString::fromStdString(info.second)), Q_ARG(QString, QString::fromStdString(info.first)), Q_ARG(bool, false));
+                break;
+            }
+            case TaskType::SFTP_READ_DIR: {
+                method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, succeed), Q_ARG(QString, QString::fromStdString(info.second)),
                               Q_ARG(QVector<SftpSession::FileInfo>, QVector<SftpSession::FileInfo>::fromStdVector(dirInfo)));
                 break;
             }
-            case TaskType::SFTP_REMOVE_FILE:
-            {
-                method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, isTaskSucceed), Q_ARG(QString, QString::fromStdString(rFile)));
+            case TaskType::SFTP_REMOVE_FILE: {
+                method.invoke(obj, Qt::QueuedConnection, Q_ARG(bool, succeed), Q_ARG(QString, QString::fromStdString(info.second)));
                 break;
             }
         }
-
+        dirInfo.clear();
     }
 }
 

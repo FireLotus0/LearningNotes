@@ -25,17 +25,17 @@ public:
     void registerCallback(TaskType taskType, QObject* object, const std::string& methodName);
 
     template<typename Caller, typename Func, typename...Args>
-    void addTask(TaskType taskType, Caller* caller, Func&& func, Args...args) {
+    unsigned long addTask(TaskType taskType, Caller* caller, Func&& func, Args...args) {
         if(sessionState == SessionState::INVALID) {
             LOG_ERROR("Add Task Failed: Session State Is Invalid IP:", ip, "Session Name:", sessionName);
-            return;
+            return 0;
         }
-        TASK_EXECUTOR.addTask(id, taskType, std::forward<Func>(func), std::move(caller), std::forward<Args>(args)...);
+        return TASK_EXECUTOR.addTask(id, taskType, std::forward<Func>(func), std::move(caller), std::forward<Args>(args)...);
     }
 
     std::string getUserIp() const;
 
-    virtual void executeCallback(TaskType taskType) = 0;
+    virtual void executeCallback(TaskType taskType, unsigned long taskId, bool succeed) = 0;
 
     virtual SessionType sessionType() const = 0;
 
@@ -62,7 +62,7 @@ protected:
     std::string passwd;
     std::string sessionName;
     bool sockConnValid;
-    bool isTaskSucceed = false;
+//    bool isTaskSucceed = false;
     unsigned short port;
     SessionType type;
     SessionState sessionState;

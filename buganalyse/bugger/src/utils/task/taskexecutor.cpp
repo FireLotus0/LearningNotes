@@ -4,6 +4,7 @@
 #include "taskexecutor.h"
 #include "utils/macros.h"
 #include "logger/logger.h"
+#include "utils/session/session.h"
 
 #include <iostream>
 #include <sstream>

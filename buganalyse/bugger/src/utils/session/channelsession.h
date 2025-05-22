@@ -13,7 +13,7 @@ public:
 
     void addCmdTask(const std::string& cmd);
 
-    void executeCallback(TaskType taskType) override;
+    void executeCallback(TaskType taskType, unsigned long taskId, bool succeed) override;
 
     SessionType sessionType() const override;
 
