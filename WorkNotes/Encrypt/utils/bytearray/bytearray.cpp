@@ -107,7 +107,7 @@ std::size_t ByteArray::length() const {
     return buffer.size();
 }
 
-std::string ByteArray::toString() {
+std::string ByteArray::toString() const {
     std::string res;
     auto sz = buffer.size();
     res.resize(sz);
@@ -205,7 +205,7 @@ bool ByteArray::operator==(const ByteArray &other) const {
     return other.buffer == buffer;
 }
 
-ByteArray ByteArray::fetch(std::size_t start, std::size_t length) {
+ByteArray ByteArray::fetch(std::size_t start, std::size_t length) const {
     /// TODO: Range Check
     return ByteArray(std::vector<std::byte>(buffer.begin() + start, buffer.begin() + start + length));
 }
@@ -231,5 +231,10 @@ ByteArray ByteArray::operator+(const ByteArray &other) {
     auto tmp = *this;
     tmp.append(other);
     return tmp;
+}
+
+ std::byte ByteArray::get(std::size_t index) const {
+    /// TODO: check range
+    return buffer[index];
 }
 

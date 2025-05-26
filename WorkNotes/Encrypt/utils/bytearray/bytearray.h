@@ -77,6 +77,8 @@ public:
 
     bool insert(const ByteArray& h, const ByteArray& s, const ByteArray& c, const ByteArray& v, const ByteArray& e);
 
+    std::byte get(std::size_t index) const;
+
     std::byte& operator[](std::size_t index);
 
     const std::byte& operator[](std::size_t index) const;
@@ -89,7 +91,7 @@ public:
 
     ByteArray operator+(const ByteArray& other);
 
-    ByteArray fetch(std::size_t start, std::size_t end);
+    ByteArray fetch(std::size_t start, std::size_t end) const;
 
     std::vector<std::byte> data();
 
@@ -114,7 +116,7 @@ public:
 public:
     std::size_t length() const;
 
-    std::string toString();
+    std::string toString() const;
 
 private:
     static uint8_t charToHex(char c);

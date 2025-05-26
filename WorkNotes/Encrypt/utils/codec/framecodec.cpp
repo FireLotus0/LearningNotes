@@ -3,49 +3,58 @@
 #include "framecodec.h"
 
 void FrameCodec::appendBuffer(const std::vector<uint8_t> &data) {
-    bool isFirstFrame = false, finished = false;
+    bool isFirstFrame = false, finished = false, hasError{false};
     if(curType == INT16_MAX) {
         // first frame
-        buffer.append(data);
+        auto buffer = ByteArray::fromIntArray(data);
         if(buffer.fetch(0, header.length()) != header) {
             LOG_WARNING("Frame Header Mismatch: Receive=", buffer.toHexStr(true), "Header=", header.toHexStr(true),
                         "all data:", buffer.toHexStr(true));
-            buffer.clear();
-            return;
+            hasError = true;
         }
         isFirstFrame = true;
+        auto type = buffer.fetch(typePos, 2).toInteger<2>();
+        if(dataCache.find(type) == dataCache.end()) {
+            LOG_ERROR("Can not decode frame with type:", curType, "not registered");
+            hasError = true;
+            assert(false);
+        } else {
+            curType = type;
+        }
     }
-    for(int i = 0; i < data.size(); i++) {
-        if(data[i] == tail.toInteger<1>()) {
-            if(isFirstFrame) {
-
+    if(!hasError) {
+        auto& buffer = dataCache[curType];
+        auto curPos = buffer.length();
+        buffer.append(data);
+        for(auto i = curPos; i < buffer.length(); i++) {
+            if(buffer.fetch(i, 1) == tail) {
+                if(buffer.fetch(0, 2) != header) {
+                    LOG_WARNING("Frame Header Mismatch: Receive=", buffer.fetch(0, 2).toHexStr(true), "Header=", header.toHexStr(true),
+                                "all data:", buffer.toHexStr(true));
+                    hasError = true;
+                } else {
+                    if(buffer.fetch(i - 2, 2) != CRC::CRC16(buffer.fetch(0, i - 2))) {
+                        LOG_WARNING("CRC Mismatch: Receive=", buffer.fetch(i - 2, 2).toHexStr(true), "CRC=",  CRC::CRC16(buffer.fetch(0, i - 2)).toHexStr(true),
+                                    "all data:", buffer.toHexStr(true), " CRC Part=", buffer.fetch(0, i - 2).toHexStr(true));
+                        hasError = true;
+                    } else {
+                        auto contentSz = buffer.fetch(sizePos, 1).toInteger<1>() - 2;
+                        auto data = buffer.fetch(dataPos, contentSz);
+                        LOG_INFO("Decode Finish: TYPE=", curType, "Data=", data.toHexStr(true));
+                        /// TODO: invoke callback
+                        std::invoke(decodeCallbacks[curType], data);
+                        dataCache[curType].clear();
+                        curType = INT16_MAX;
+                        break;
+                    }
+                }
             }
         }
     }
 
-    if(buffer.length() >= curSize + minSize) {
-        bool success{true};
-        auto verifyFlag = buffer.fetch(header.length() + size.length() + curSize, verify.length());
-        if(verifyFlag != verify) {
-            LOG_FATAL("Verify Failed: verify=", verify.toHexStr(), " receive=", verifyFlag.toHexStr(), " all data:",
-                      buffer.toHexStr(true));
-            success = false;
-        }
-        auto tailFlag = buffer.fetch(header.length() + size.length() + curSize + tail.length(), tail.length());
-        if(tailFlag != tail) {
-            LOG_FATAL("Tail Mismatch: tail=", tail.toHexStr(), " receive=", tailFlag.toHexStr(), " all data:",
-                      buffer.toHexStr(true));
-            success = false;
-        }
-        if(!success) {
-            curSize = 0;
-            buffer.clear();
-            return;
-        } else {
-            LOG_INFO("Decode Finish:", buffer.toHexStr(true));
-
-            curSize = 0;
-        }
+    if(hasError) {
+        dataCache[curType].clear();
+        curType = INT16_MAX;
     }
 }
 
@@ -57,7 +66,10 @@ FrameCodec::FrameCodec() {
     header = ByteArray::fromHex("AAFF");
     tail = ByteArray::fromHex("AF");
     minSize = 6;
-    dataStartPos = 5;
+}
+
+void FrameCodec::appendBuffer(const ByteArray &data) {
+    appendBuffer(data.toIntArray());
 }
 
 
