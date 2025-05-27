@@ -13,18 +13,24 @@ enum ErrorCode {
     OK = 0,
     LIBUSB_UNAVAILABLE = 1, // libusb初始化失败
     DEVICE_REMOVED = 2, // 设备移除
-
+    DEVICE_NOT_OPEN,   // 设备未连接
+    WRITE_TIME_OUT,
+    READ_TIME_OUT,
+    LIBUSB_INTERNAL_ERROR,
 };
 
 class UsbManager : public SingleInstance<UsbManager>{
 public:
-    template<typename T>
+    int write(const ByteArray& data);
 
+    std::pair<int, ByteArray> read();
 
-private:
     UsbManager();
 
     ~UsbManager();
+
+    void registerCallback(const std::function<void()>& arriveCb, const std::function<void()>& leftCb);
+
 private:
     bool checkError(int code);
 
@@ -44,5 +50,6 @@ private:
     libusb_device* targetDevice;
     libusb_device_handle* targetHandle;
     std::size_t packageSize{64};
+    std::function<void()> onArriveCb{nullptr}, onLeftCb{nullptr};
 };
 

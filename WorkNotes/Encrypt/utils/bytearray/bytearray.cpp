@@ -207,6 +207,9 @@ bool ByteArray::operator==(const ByteArray &other) const {
 
 ByteArray ByteArray::fetch(std::size_t start, std::size_t length) const {
     /// TODO: Range Check
+    if(start + length >= buffer.size()) {
+        return {};
+    }
     return ByteArray(std::vector<std::byte>(buffer.begin() + start, buffer.begin() + start + length));
 }
 

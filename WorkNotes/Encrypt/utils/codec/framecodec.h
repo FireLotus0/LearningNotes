@@ -1,4 +1,4 @@
-#pragma oncn
+#pragma once
 #include "utils/bytearray/bytearray.h"
 #include "utils/logger/logger.h"
 #include "crc.h"
@@ -6,6 +6,8 @@
 #include "utils/json/json.h"
 #include <functional>
 #include <unordered_map>
+
+using nlohmann::json;
 
 class FrameCodec {
 public:
@@ -19,9 +21,8 @@ public:
         auto content = type + dataContent;
         auto size = ByteArray::fromData<uint8_t>((uint8_t)content.length());
         auto verify = CRC::CRC16(header + size + content);
-
         ByteArray encodeBuf(minSize + content.length());
-        auto tmp = header+size+ content+verify+tail;
+        auto tmp = header + size + content+verify+tail;
         if(encodeBuf.insert(tmp, 0)) {
             LOG_DEBUG("Encode Data:", encodeBuf.toHexStr());
             dataCache[type.toInteger<2>()] = ByteArray{};
@@ -69,10 +70,9 @@ public:
             {
                 LOG_ERROR("Json Parse Failed:", e.what());
             }
-        } else {
-            res.first = true;
-            return res;
         }
+        res.first = true;
+        return res;
     }
 
     template<unsigned short Key>

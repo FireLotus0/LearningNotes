@@ -43,7 +43,6 @@ void UsbManager::listenHotPlug() {
                 }
             }
         }
-        libusb_free_device_list(devLists, 1);
         if (findTarget && !targetDeviceExists) {
             // 设备插入
             targetDeviceExists = onDevArrived(tmpDevice);
@@ -52,36 +51,120 @@ void UsbManager::listenHotPlug() {
             onDevLeft();
             targetDeviceExists = false;
         }
+        libusb_free_device_list(devLists, 1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
 
 bool UsbManager::onDevArrived(libusb_device *device) {
-    std::lock_guard<std::mutex> lk(mt);
-    targetDevice = device;
-    targetHandle = libusb_open_device_with_vid_pid(nullptr, targetId.second, targetId.first);
+    {
+        std::lock_guard<std::mutex> lk(mt);
+        targetDevice = device;
+        targetHandle = libusb_open_device_with_vid_pid(nullptr, targetId.second, targetId.first);
+    }
+
     if (targetHandle != nullptr) {
-#ifdef OS_UNIX
+//#ifdef OS_UNIX
         checkError(libusb_set_auto_detach_kernel_driver(targetHandle, 1));
         checkError(libusb_set_configuration(targetHandle, 1));
         checkError(libusb_claim_interface(targetHandle, 0));
-#endif
-        /// TODO: somtimes it worked even busy error reported
+//#endif
+        /// TODO: sometimes it worked even busy error reported
         isUsbAvailable = true;
+        LOG_INFO("Device Arrive!");
+        if(onArriveCb != nullptr) {
+            onArriveCb();
+        }
         return true;
     }
     return false;
 }
 
 void UsbManager::onDevLeft() {
-    std::lock_guard<std::mutex> lk(mt);
-    isUsbAvailable = false;
-    targetDevice = nullptr;
+    {
+        std::lock_guard<std::mutex> lk(mt);
+        isUsbAvailable = false;
+        targetDevice = nullptr;
+    }
+
 #ifdef OS_UNIX
     libusb_release_interface(targetHandle, 0);
 #endif
+    LOG_INFO("Device Left!");
     libusb_close(targetHandle);
     targetHandle = nullptr;
+    if(onLeftCb != nullptr) {
+        onLeftCb();
+    }
+}
+
+int UsbManager::write(const ByteArray &data) {
+    if(!isUsbAvailable) {
+        LOG_WARNING("Write Failed: Device Not Available");
+        return ErrorCode::DEVICE_NOT_OPEN;
+    }
+    int totalLength = data.length();
+    int transferred = 0, tmpTransferred = 0;
+    auto sourceData = data.toString();
+    char sendBuf[64];
+    int rt = 0;
+    while(transferred < totalLength) {
+        memset(sendBuf, 0, 64);
+        memcpy(sendBuf, sourceData.data() + transferred, min(packageSize, totalLength - transferred));
+        {
+            std::lock_guard<std::mutex> lk(mt);
+            if(targetHandle == nullptr) {
+                return ErrorCode::DEVICE_NOT_OPEN;
+            }
+            rt = libusb_interrupt_transfer(targetHandle, 1 | LIBUSB_ENDPOINT_OUT,
+                                                (unsigned char*)sendBuf, 64, &tmpTransferred, 2000);
+        }
+        if(!checkError(rt)) {
+            return rt == LIBUSB_ERROR_TIMEOUT ? ErrorCode::WRITE_TIME_OUT : ErrorCode::LIBUSB_INTERNAL_ERROR;
+        } else {
+            LOG_INFO("Write Data:", ByteArray(sendBuf, 64).toHexStr());
+#ifdef OS_WINDOWS
+            transferred += tmpTransferred - 1;
+#elif defined(OS_UNIX)
+            transferred += tmpTransferred;
+#endif
+        }
+    }
+    return ErrorCode::OK;
+}
+
+std::pair<int, ByteArray> UsbManager::read() {
+    std::pair<int, ByteArray> res;
+    int tryTimes = 0, rt = 0;
+    char readBuf[64];
+    while(tryTimes < 3) {
+        memset(readBuf, 0, 64);
+        {
+            std::lock_guard<std::mutex> lk(mt);
+            if(targetHandle == nullptr) {
+                res.first = ErrorCode::DEVICE_NOT_OPEN;
+                return res;
+            }
+            rt = libusb_interrupt_transfer(targetHandle, 1 | LIBUSB_ENDPOINT_IN, (unsigned char*)readBuf, 64, NULL, 2000);
+            if(!checkError(rt)) {
+                if(rt == LIBUSB_ERROR_TIMEOUT) {
+                    tryTimes++;
+                } else {
+                    res.first = ErrorCode::LIBUSB_INTERNAL_ERROR;
+                    return res;
+                }
+            } else {
+                res.second.append(ByteArray(readBuf, 64));
+            }
+        }
+    }
+    res.first = ErrorCode::OK;
+    return res;
+}
+
+void UsbManager::registerCallback(const std::function<void()> &arriveCb, const std::function<void()> &leftCb) {
+    onArriveCb = arriveCb;
+    onLeftCb = leftCb;
 }
 
 

@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <QString>
 
 /*------ Log Level Define ------*/
 #define MAKE_LOG_LEVEL(GEN) \
@@ -54,7 +55,11 @@ public:
 private:
     template<typename T, typename...Args>
     void printHelp(T&& t, Args&&... args) {
-        buf << t << "  ";
+        if constexpr (std::is_same_v<QString, std::decay_t<decltype(t)>>) {
+            buf << t.toStdString() << "  ";
+        } else {
+            buf << t << "  ";
+        }
         if constexpr (sizeof...(args) > 0) {
             printHelp(std::forward<Args>(args)...);
         }

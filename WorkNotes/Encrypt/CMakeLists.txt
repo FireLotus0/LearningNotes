@@ -23,7 +23,7 @@ elseif (Unix)
     set(USB_NAME usb-1.0)
 endif ()
 
-find_package(Qt5 COMPONENTS Core)
+find_package(Qt5 COMPONENTS Core Network)
 
 # 查找libusb
 find_library(USB_LIBRARY ${USB_NAME})
@@ -46,14 +46,17 @@ set(SRC
 
     utils/codec/crc.h
     utils/codec/crc.cpp
-    utils/datahandler/datahandler.h
-    utils/datahandler/datahandler.cpp
+        utils/encryptdog/encryptdog.h
+        utils/encryptdog/encryptdog.cpp
     utils/logger/logger.h
     utils/json/json.h
 
     usbmanager/libusb.h
     usbmanager/usbmanager.h
     usbmanager/usbmanager.cpp
+
+    utils/hostinfo/hostinfo.h
+    utils/hostinfo/hostinfo.cpp
 
     utils/encrypt/encryptor.h
     utils/encrypt/encryptor.cpp
@@ -69,5 +72,6 @@ add_executable(test ${SRC})
 target_link_libraries(test
     ${USB_LIBRARY}
     Qt5::Core
+    Qt5::Network
     Threads::Threads
 )

@@ -1,6 +1,8 @@
 #include "encryptor.h"
 #include "utils/logger/logger.h"
+#include "utils/bytearray/bytearray.h"
 #include <qcryptographichash.h>
+#include <qdebug.h>
 
 namespace Encryptor {
 std::string encrypt(const std::string &data) {
@@ -17,7 +19,9 @@ std::string encrypt(const std::string& key, const std::string &data) {
     QByteArray encrypted = QAESEncryption::Crypt(QAESEncryption::AES_256, QAESEncryption::CBC,
                                                  QString::fromStdString(data).toUtf8(), hashKey, iv, QAESEncryption::PKCS7);
     auto res = encrypted.toStdString();
-    LOG_INFO("Encryt: key=", key, "plain text=", data," cipher text=", res);
+    qDebug() << "key=" << hashKey.toHex() << " iv=" << iv.toHex();
+    LOG_INFO("Encryt: key=", ByteArray(hashKey.toStdString()).toHexStr(), "iv",
+             ByteArray(iv.toStdString()).toHexStr(), "plain text=", data," cipher text=", ByteArray(res).toHexStr());
     return res;
 }
 
