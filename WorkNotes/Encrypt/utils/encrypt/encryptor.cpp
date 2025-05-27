@@ -28,10 +28,11 @@ std::string encrypt(const std::string& key, const std::string &data) {
 std::string decrypt(const std::string& key, const std::string &data) {
     QByteArray hashKey = QCryptographicHash::hash(QString::fromStdString(key).toLocal8Bit(), QCryptographicHash::Sha256);
     QByteArray iv{hashKey.constData(), 16};
-    auto decData = QAESEncryption::Decrypt(QAESEncryption::AES_256, QAESEncryption::CBC, QString::fromStdString(data).toUtf8(),
+    auto decData = QAESEncryption::Decrypt(QAESEncryption::AES_256, QAESEncryption::CBC, QByteArray::fromStdString(data),
                                            hashKey, iv,  QAESEncryption::PKCS7);
-    auto res = QAESEncryption::RemovePadding(decData, QAESEncryption::PKCS7).toStdString();
-    LOG_INFO("Decrypt: key=", key, "cipher text=", data, "plain text=", res);
+    decData = QAESEncryption::RemovePadding(decData, QAESEncryption::PKCS7);
+    auto res = decData.toStdString();
+    LOG_INFO("Decode Res:", res);
     return res;
 }
 

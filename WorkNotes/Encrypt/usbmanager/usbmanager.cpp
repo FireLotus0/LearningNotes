@@ -110,7 +110,7 @@ int UsbManager::write(const ByteArray &data) {
     int rt = 0;
     while(transferred < totalLength) {
         memset(sendBuf, 0, 64);
-        memcpy(sendBuf, sourceData.data() + transferred, min(packageSize, totalLength - transferred));
+        memcpy(sendBuf, sourceData.data() + transferred, (packageSize < (totalLength - transferred) ? packageSize : (totalLength - transferred)));
         {
             std::lock_guard<std::mutex> lk(mt);
             if(targetHandle == nullptr) {
@@ -118,6 +118,7 @@ int UsbManager::write(const ByteArray &data) {
             }
             rt = libusb_interrupt_transfer(targetHandle, 1 | LIBUSB_ENDPOINT_OUT,
                                                 (unsigned char*)sendBuf, 64, &tmpTransferred, 2000);
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
         if(!checkError(rt)) {
             return rt == LIBUSB_ERROR_TIMEOUT ? ErrorCode::WRITE_TIME_OUT : ErrorCode::LIBUSB_INTERNAL_ERROR;
@@ -137,6 +138,7 @@ std::pair<int, ByteArray> UsbManager::read() {
     std::pair<int, ByteArray> res;
     int tryTimes = 0, rt = 0;
     char readBuf[64];
+    int tmpTransferred;
     while(tryTimes < 3) {
         memset(readBuf, 0, 64);
         {
@@ -145,7 +147,7 @@ std::pair<int, ByteArray> UsbManager::read() {
                 res.first = ErrorCode::DEVICE_NOT_OPEN;
                 return res;
             }
-            rt = libusb_interrupt_transfer(targetHandle, 1 | LIBUSB_ENDPOINT_IN, (unsigned char*)readBuf, 64, NULL, 2000);
+            rt = libusb_interrupt_transfer(targetHandle, 1 | LIBUSB_ENDPOINT_IN, (unsigned char*)readBuf, 64, &tmpTransferred, 2000);
             if(!checkError(rt)) {
                 if(rt == LIBUSB_ERROR_TIMEOUT) {
                     tryTimes++;

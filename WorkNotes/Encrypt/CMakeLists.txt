@@ -10,17 +10,18 @@ set(CMAKE_AUTOMOC ON)
 # 系统平台定义
 if (WIN32)
     set(OS_NAME OS_WINDOWS)
-elseif (UNIX)
+else()
     set(OS_NAME OS_UNIX)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY /projects/EncryptTool/)
 endif ()
 
 if (MSVC)
     # 设置utf-8编码
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-    set(USB_NAME libusb-1.0)
-elseif (Unix)
-    set(USB_NAME usb-1.0)
+    set(USB_NAME "libusb-1.0")
+else()
+    set(USB_NAME "usb-1.0")
 endif ()
 
 find_package(Qt5 COMPONENTS Core Network)
@@ -28,7 +29,7 @@ find_package(Qt5 COMPONENTS Core Network)
 # 查找libusb
 find_library(USB_LIBRARY ${USB_NAME})
 if (NOT USB_LIBRARY)
-    message(FATAL_ERROR "USB Library Not Found!")
+    message(FATAL_ERROR "USB Library Not Found! ${USB_NAME}")
 endif ()
 # 查找线程库
 find_package(Threads REQUIRED)
@@ -67,9 +68,10 @@ set(SRC
     utils/encrypt/qtaes/aesni/aesni-key-exp.h
     utils/encrypt/qtaes/aesni/aesni-key-init.h
 
+    utils/http/httplib.h
 )
-add_executable(test ${SRC})
-target_link_libraries(test
+add_executable(${PROJECT_NAME} ${SRC})
+target_link_libraries(${PROJECT_NAME}
     ${USB_LIBRARY}
     Qt5::Core
     Qt5::Network

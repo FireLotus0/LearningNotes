@@ -1,4 +1,5 @@
 #pragma once
+
 #include "utils/bytearray/bytearray.h"
 #include "utils/logger/logger.h"
 #include "crc.h"
@@ -13,17 +14,17 @@ class FrameCodec {
 public:
     FrameCodec();
 
-    void setFrameFormat(const std::string& format);
+    void setFrameFormat(const std::string &format);
 
     template<unsigned short Type>
-    ByteArray encode(const ByteArray& dataContent) {
+    ByteArray encode(const ByteArray &dataContent) {
         auto type = ByteArray::fromData(Type);
         auto content = type + dataContent;
-        auto size = ByteArray::fromData<uint8_t>((uint8_t)content.length());
+        auto size = ByteArray::fromData<uint8_t>((uint8_t) content.length());
         auto verify = CRC::CRC16(header + size + content);
         ByteArray encodeBuf(minSize + content.length());
-        auto tmp = header + size + content+verify+tail;
-        if(encodeBuf.insert(tmp, 0)) {
+        auto tmp = header + size + content + verify + tail;
+        if (encodeBuf.insert(tmp, 0)) {
             LOG_DEBUG("Encode Data:", encodeBuf.toHexStr());
             dataCache[type.toInteger<2>()] = ByteArray{};
         }
@@ -37,9 +38,9 @@ public:
      * @return
      */
     template<typename T>
-    std::pair<bool, T> decode(const ByteArray& completeFrame) {
+    std::pair<bool, T> decode(const ByteArray &completeFrame) {
         auto res = std::make_pair(false, T{});
-        if(completeFrame.fetch(0, 2) != header) {
+        if (completeFrame.fetch(0, 2) != header) {
             LOG_INFO("Decode Error: header mismatch, expected:", header.toHexStr(), "frame:", completeFrame.toHexStr());
             return res;
         }
@@ -48,49 +49,53 @@ public:
         auto verifyPos = dataPos + contentSz;
         auto receiveVerify = completeFrame.fetch(verifyPos, 2);
         auto receiveTail = completeFrame.fetch(verifyPos + 2, 1);
-        if(receiveTail != tail) {
+        if (receiveTail != tail) {
             LOG_INFO("Decode Error: tail mismatch, expected:", tail.toHexStr(), "frame:", completeFrame.toHexStr());
             return res;
         }
-        if(CRC::CRC16(completeFrame.fetch(0, verifyPos)) != receiveVerify) {
+        if (CRC::CRC16(completeFrame.fetch(0, verifyPos)) != receiveVerify) {
             LOG_INFO("Decode Error: crc16 mismatch, expected:", "frame:", completeFrame.toHexStr());
             return res;
         }
         auto data = completeFrame.fetch(dataPos, contentSz);
-        if(T::Type != 3) {
-            try
-            {
-                auto j = json::parse(Encryptor::decrypt(data.toString()));  // 从字符串反序列化
-                LOG_INFO("JSON parse finish", j.dump());
-                res.first = true;
-                res.second = j.template get<T>();
-                return res;
-            }
-            catch(std::exception& e) // 捕获异常
-            {
-                LOG_ERROR("Json Parse Failed:", e.what());
-            }
+//        assert(T::Type >=4 && T::Type <= 6);
+
+        try {
+            auto jsonStr = Encryptor::decrypt(data.toString());
+            LOG_INFO("jsonStr=", jsonStr);
+            auto j = json::parse(jsonStr);  // 从字符串反序列化
+            LOG_INFO("JSON parse finish", j.dump());
+            res.first = true;
+            res.second = j.template get<T>();
+            return res;
         }
+        catch (std::exception &e) // 捕获异常
+        {
+            LOG_ERROR("Json Parse Failed:", e.what());
+        }
+
         res.first = true;
-        return res;
+        return
+                res;
     }
 
     template<unsigned short Key>
-    void registerCallback(const std::function<void(const ByteArray&)>& decodeCallback) {
-        if(decodeCallbacks.find(Key) != decodeCallbacks.end()) {
+    void registerCallback(const std::function<void(const ByteArray &)> &decodeCallback) {
+        if (decodeCallbacks.find(Key) != decodeCallbacks.end()) {
             LOG_WARNING("Decode Callback Already Exists: type=", Key);
             return;
         }
         decodeCallbacks[Key] = decodeCallback;
     }
 
-    void appendBuffer(const std::vector<uint8_t>& data);
+    void appendBuffer(const std::vector<uint8_t> &data);
 
-    void appendBuffer(const ByteArray& data);
+    void appendBuffer(const ByteArray &data);
+
 private:
-    // Type -- {verify, data}
+// Type -- {verify, data}
     std::unordered_map<unsigned short, ByteArray> dataCache;
-    std::unordered_map<unsigned int, std::function<void(const ByteArray&)>> decodeCallbacks;
+    std::unordered_map<unsigned int, std::function<void(const ByteArray &)>> decodeCallbacks;
     ByteArray header, tail;
     std::size_t minSize{0}, sizePos{2}, typePos{3}, dataPos{5};
     unsigned short curType = INT16_MAX;

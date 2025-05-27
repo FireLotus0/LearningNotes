@@ -41,6 +41,7 @@ struct ReadId {
     enum {
         Type = 3
     };
+    uint8_t placeHolder = 0;
 };
 
 struct ReadIdFd {
@@ -54,4 +55,5 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReadKey, cpuId, mac)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReadKeyFd, key)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GenKey, cpuId, mac, sk)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GenKeyFd, key)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReadId, placeHolder)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReadIdFd, id)
