@@ -2,6 +2,20 @@
 #include <string>
 #include "utils/json/json.h"
 
+
+enum ErrorCode {
+    OK = 0,
+    LIBUSB_UNAVAILABLE = 1, // libusb初始化失败
+    DEVICE_REMOVED = 2, // 设备移除
+    DEVICE_NOT_OPEN,   // 设备未连接
+    WRITE_TIME_OUT,
+    READ_TIME_OUT,
+    LIBUSB_INTERNAL_ERROR,
+    KEY_EMPTY_FROM_DOG,
+    SERVER_PUB_KEY_INVALID,
+    SEND_SESSION_KEY_RESPONSE_FAIL,
+};
+
 struct ReadKey {
     enum {
         Type = 1

@@ -25,7 +25,8 @@ else()
 endif ()
 
 find_package(Qt5 COMPONENTS Core Network)
-
+add_definitions(-DWIN32_LEAN_AND_MEAN)
+add_definitions(-D_WINSOCKAPI_)
 # 查找libusb
 find_library(USB_LIBRARY ${USB_NAME})
 if (NOT USB_LIBRARY)
@@ -47,14 +48,14 @@ set(SRC
 
     utils/codec/crc.h
     utils/codec/crc.cpp
-        utils/encryptdog/encryptdog.h
-        utils/encryptdog/encryptdog.cpp
+    encryptdog/encryptdog.h
+    encryptdog/encryptdog.cpp
     utils/logger/logger.h
     utils/json/json.h
 
-    usbmanager/libusb.h
-    usbmanager/usbmanager.h
-    usbmanager/usbmanager.cpp
+    utils/usbmanager/libusb.h
+    utils/usbmanager/usbmanager.h
+    utils/usbmanager/usbmanager.cpp
 
     utils/hostinfo/hostinfo.h
     utils/hostinfo/hostinfo.cpp
@@ -68,7 +69,12 @@ set(SRC
     utils/encrypt/qtaes/aesni/aesni-key-exp.h
     utils/encrypt/qtaes/aesni/aesni-key-init.h
 
-    utils/http/httplib.h
+    http/httplib.h
+    http/httpmanager.h
+    http/httpmanager.cpp
+
+    enctool/enctool.h
+    enctool/enctool.cpp
 )
 add_executable(${PROJECT_NAME} ${SRC})
 target_link_libraries(${PROJECT_NAME}

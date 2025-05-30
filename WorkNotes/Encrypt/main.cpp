@@ -5,11 +5,14 @@
 #include "utils/codec/framecodec.h"
 #include "utils/json/json.h"
 #include "bean/common_type.h"
-#include "utils/encryptdog/encryptdog.h"
+#include "encryptdog/encryptdog.h"
+#include "utils/hostinfo/hostinfo.h"
+#include "http/httpmanager.h"
+#include "enctool/enctool.h"
 
 using json = nlohmann::json;
 
-// 测试可读字符串数据编码成帧并解码
+//// 测试可读字符串数据编码成帧并解码
 void testReadable() {
     GenKeyFd genKeyFd;
     genKeyFd.key = ByteArray::fromHex("AAFF6202000E25EE0CA4B7883DFFAE800024B9FFA2D46E27E3383CA40688904"
@@ -24,17 +27,31 @@ void testReadable() {
     codec.decode<GenKeyFd>(frame);
 }
 
+void testHostInfo() {
+    LOG_DEBUG("CPU ID=",HostInfo::getCpuId(), "MAC=", HostInfo::getMac());
+}
+
+void testGetPubKey() {
+    auto http = HttpManager::instance();
+    LOG_INFO("Test Get Server Key:", http->getServerPubKey(123455));
+}
+
+void testWindowsRefreshKey() {
+    char buf[128];
+    memset(buf, 0, 128);
+    EncTool::instance()->refreshKey(buf);
+}
 
 int main() {
-    EncryptDog::instance();
+//    testHostInfo();
+//    EncryptDog::instance();
 
 
-//    FrameCodec codec;
-//    auto res = codec.decode<GenKey>(ByteArray::fromHex(
-//            "AAFF4205008CCD4B0E57C701B3A08DEEB79EE47DB41F1F4EDCCB030FAE327B30FFD1DD604EC3A20754043BE618F74BED301963E93430719E6CDC22BFFFA2EFEEAD8F437D2C2119AF"));
-//    assert(res.first);
-//    testReadable();
-    while (true) {
+
+//    testGetPubKey();
+
+    testWindowsRefreshKey();
+    while(true) {
 
     }
     return 0;

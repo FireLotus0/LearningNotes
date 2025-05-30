@@ -14,7 +14,7 @@ std::string decrypt(const std::string &data) {
 }
 
 std::string encrypt(const std::string& key, const std::string &data) {
-    QByteArray hashKey = QCryptographicHash::hash(QString::fromStdString(key).toLocal8Bit(), QCryptographicHash::Sha256);
+    QByteArray hashKey = QCryptographicHash::hash(QByteArray::fromStdString(key), QCryptographicHash::Sha256);
     QByteArray iv{hashKey.constData(), 16};
     QByteArray encrypted = QAESEncryption::Crypt(QAESEncryption::AES_256, QAESEncryption::CBC,
                                                  QString::fromStdString(data).toUtf8(), hashKey, iv, QAESEncryption::PKCS7);
@@ -45,4 +45,19 @@ std::string decrypt(unsigned long sk, const std::string &data) {
     auto skStr = std::to_string(sk);
     return decrypt(skStr, data);
 }
+
+std::string sha256(const std::string& data) {
+    auto hashVal = QCryptographicHash::hash(QByteArray::fromStdString(data), QCryptographicHash::Sha256).toStdString();
+    LOG_DEBUG("SHA-256: plain text=", data, "cipher text=", hashVal, "cipher size:", hashVal.size());
+    return hashVal;
+}
+
+std::string toBase64(const std::string& data) {
+    return QByteArray::fromStdString(data).toBase64().toStdString();
+}
+
+std::string fromBase64(const std::string& data) {
+    return QByteArray::fromBase64(QByteArray::fromStdString(data)).toStdString();
+}
+
 }

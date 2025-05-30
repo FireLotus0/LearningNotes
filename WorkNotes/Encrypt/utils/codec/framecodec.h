@@ -62,7 +62,7 @@ public:
 
         try {
             auto jsonStr = Encryptor::decrypt(data.toString());
-            LOG_INFO("jsonStr=", jsonStr);
+//            LOG_INFO("jsonStr=", jsonStr);
             auto j = json::parse(jsonStr);  // 从字符串反序列化
             LOG_INFO("JSON parse finish", j.dump());
             res.first = true;
